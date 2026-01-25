@@ -1,0 +1,32 @@
+name: Instant Query Handler
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  handle_comment:
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.issue.pull_request }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Install engine
+        run: npm install github:the-real-han/openquests-engine
+
+      - name: Handle comment
+        run: npx openquests handle-comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

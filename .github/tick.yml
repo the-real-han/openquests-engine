@@ -1,0 +1,61 @@
+name: Daily Game Tick
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout playground (this repo)
+      - name: Checkout playground
+        uses: actions/checkout@v4
+        with:
+          path: playground
+
+      # 2. Checkout engine repo
+      - name: Checkout openquests engine
+        uses: actions/checkout@v4
+        with:
+          repository: the-real-han/openquests
+          path: engine
+
+      # 3. Setup Node
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: engine/package-lock.json
+
+      # 4. Install + build engine
+      - name: Install engine dependencies
+        working-directory: engine
+        run: npm ci
+
+      - name: Build engine
+        working-directory: engine
+        run: npm run build
+
+      # 5. Run tick against playground world
+      - name: Run world tick
+        working-directory: playground
+        run: |
+          node ../engine/dist/cli.js tick
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 6. Commit updated gamestate
+      - name: Commit state changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Daily Tick"
+          file_pattern: gamestate.json
+          repository: playground

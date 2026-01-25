@@ -8,7 +8,6 @@ export async function handleComment() {
         const context = github.context;
         // Event Trigger: issue_comment
         // Payload has 'comment' and 'issue'
-
         if (context.eventName !== 'issue_comment') {
             console.log('Not an issue_comment event. Skipping.');
             return;

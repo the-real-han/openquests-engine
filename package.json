@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "description": "Daily tick engine for GitHub-native D&D",
   "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
   "bin": {
     "openquests": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
     "tick": "ts-node src/index.ts",
+    "prepare": "npm run build",
     "test": "for f in test/*.ts; do echo \"Running $f...\"; ts-node $f; done"
   },
   "keywords": [],
