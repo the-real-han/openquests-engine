@@ -1,6 +1,5 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { Action, PlayerClass, PLAYER_CLASSES } from '@openquests/schema';
 import { loadState } from './state';
 import { generateLookResponse } from './queries/look';
 
