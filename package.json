@@ -1,0 +1,27 @@
+{
+  "name": "@openquests/engine",
+  "version": "1.0.0",
+  "description": "Daily tick engine for GitHub-native D&D",
+  "main": "dist/index.js",
+  "bin": {
+    "openquests": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "tick": "ts-node src/index.ts",
+    "test": "for f in test/*.ts; do echo \"Running $f...\"; ts-node $f; done"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/github": "^6.0.0",
+    "@openquests/schema": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.30",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
+  }
+}
