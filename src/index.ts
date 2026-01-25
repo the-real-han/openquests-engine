@@ -160,5 +160,3 @@ export async function runTick() {
         }
     }
 }
-
-runTick()
