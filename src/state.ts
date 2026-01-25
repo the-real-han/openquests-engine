@@ -31,7 +31,7 @@ export function saveState(baseDir: string, state: GameState): void {
 
 function getInitialState(): GameState {
     return {
-        day: 1,
+        day: 0,
         locations: {
             'town_square': {
                 id: 'town_square',
@@ -48,7 +48,7 @@ function getInitialState(): GameState {
         },
         players: {},
         worldLog: {
-            day: 1,
+            day: 0,
             summary: 'The world stirs as adventurers continue their journeys.',
             population: 0,
             notes: []
