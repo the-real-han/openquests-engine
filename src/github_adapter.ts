@@ -46,6 +46,7 @@ export class GitHubAdapter implements GameInputs {
             owner: this.owner,
             repo: this.repo,
             state: 'open',
+            labels: 'player'
         });
 
         return issues.map(i => ({
