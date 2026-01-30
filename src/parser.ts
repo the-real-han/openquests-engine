@@ -26,7 +26,7 @@ export function parseIssueBody(body: string): ParsedCharacter {
             currentSection = 'CLASS';
             continue;
         }
-        if (line.match(/^##\s+Optional Backstory/i)) {
+        if (line.match(/^##\s+Backstory/i)) {
             currentSection = 'BACKSTORY';
             continue;
         }

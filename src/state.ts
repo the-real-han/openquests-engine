@@ -33,17 +33,35 @@ function getInitialState(): GameState {
     return {
         day: 0,
         locations: {
-            'town_square': {
-                id: 'town_square',
-                name: 'Town Square',
-                description: 'The center of the village. It is safe here.',
-                exits: ['forest_edge']
+            'blue_base': {
+                id: 'blue_base',
+                clanId: 'blue_clan',
+                description: 'The base of the Blue Whales.',
             },
-            'forest_edge': {
-                id: 'forest_edge',
-                name: 'Forest Edge',
-                description: 'The edge of the dark forest. Goblins are rumored to be near.',
-                exits: ['town_square']
+            'red_base': {
+                id: 'red_base',
+                clanId: 'red_clan',
+                description: 'The base of the Red Lions.',
+            },
+            'purple_base': {
+                id: 'purple_base',
+                clanId: 'purple_clan',
+                description: 'The base of the Purple Dragons.',
+            },
+            'yellow_base': {
+                id: 'yellow_base',
+                clanId: 'yellow_clan',
+                description: 'The base of the Yellow Eagles.',
+            },
+            'black_base': {
+                id: 'black_base',
+                clanId: 'black_clan',
+                description: 'The base of the Black Vipers.',
+            },
+            'monsters_base': {
+                id: 'monsters_base',
+                clanId: 'monsters_clan',
+                description: 'No one dares to claim this land. It breathes on its own, spawning monsters as naturally as the forest grows leaves. Those who enter do so for glory, power, or foolish pride.',
             }
         },
         players: {},
@@ -53,6 +71,53 @@ function getInitialState(): GameState {
             population: 0,
             notes: []
         },
-        locationLogs: {}
+        locationLogs: {},
+        clans: {
+            'blue': {
+                id: 'blue_clan',
+                name: 'The Blue Whales',
+                description: 'We tread the world and endure storms not by rage, but by patience and depth.',
+                wood: 100,
+                food: 100,
+                gold: 100,
+                defeatedBy: null
+            },
+            'red': {
+                id: 'red_clan',
+                name: 'The Red Lions',
+                description: 'We are the roar before the clash. Our banners move where blood is spilled, and our courage feeds on conflict.',
+                wood: 100,
+                food: 100,
+                gold: 100,
+                defeatedBy: null
+            },
+            'purple': {
+                id: 'purple_clan',
+                name: 'The Purple Dragons',
+                description: 'We walk between myth and fire. Power is not taken — it is awakened.',
+                wood: 100,
+                food: 100,
+                gold: 100,
+                defeatedBy: null
+            },
+            'yellow': {
+                id: 'yellow_clan',
+                name: 'The Yellow Eagles',
+                description: 'From the highest skies, we watch and wait. When we strike, it is swift, precise, and already decided.',
+                wood: 100,
+                food: 100,
+                gold: 100,
+                defeatedBy: null
+            },
+            'black': {
+                id: 'black_clan',
+                name: 'The Black Vipers',
+                description: 'We do not announce our presence. By the time our enemies feel the venom, it is already too late.',
+                wood: 100,
+                food: 100,
+                gold: 100,
+                defeatedBy: null
+            }
+        }
     };
 }

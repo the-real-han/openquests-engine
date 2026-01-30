@@ -16,5 +16,5 @@ labels: ["player"]
 - [ ] Archer
 - [ ] Monk
 
-## Optional Backstory
+## Backstory
 (1–2 sentences, purely for flavor)

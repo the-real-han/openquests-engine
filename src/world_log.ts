@@ -21,10 +21,10 @@ export function generateWorldLog(state: GameState): WorldLog {
     for (const locId of locationIds) {
         const location = state.locations[locId];
         const population = Object.values(state.players).filter(p =>
-            p.location === locId
+            p.character.clanId === location.clanId
         ).length;
 
-        log += `### ${location.name}\n`;
+        log += `### ${location.clanId}\n`;
 
         // Location Flavor
         if (population === 0) {

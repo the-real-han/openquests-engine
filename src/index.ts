@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { loadState, saveState } from './state';
 import { processTick } from './engine';
-import { Action, Player } from '@openquests/schema';
+import { Action, Clan, Player } from '@openquests/schema';
 import { GameInputs, MockAdapter, GitHubAdapter } from './github_adapter';
 import { parseAction } from './actions';
 import { parseIssueBody } from './parser';
@@ -14,6 +14,8 @@ export async function runTick() {
         const token = process.env.GITHUB_TOKEN;
         const repoOwner = process.env.GITHUB_REPOSITORY?.split('/')[0] || 'mock-owner';
         const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1] || 'mock-repo';
+
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
         // Select Adapter
         let adapter: GameInputs;
@@ -45,6 +47,14 @@ export async function runTick() {
             if (!issuesByUserId[uid]) issuesByUserId[uid] = [];
             issuesByUserId[uid].push(issue);
         }
+
+        const clansById: Record<string, number> = {};
+        const players = Object.values(gameState.players);
+        for (const clan of Object.keys(gameState.clans)) {
+            if (gameState.clans[clan].defeatedBy) continue;
+            clansById[clan] = players.filter(p => p.character.clanId === clan).length;
+        }
+        const clans = Object.entries(clansById);
 
         for (const uidStr of Object.keys(issuesByUserId)) {
             const uid = parseInt(uidStr);
@@ -79,7 +89,13 @@ export async function runTick() {
                 // Parse Character Data
                 const parsed = parseIssueBody(issue.body);
 
+                const minGroup = clans.reduce((min, group) =>
+                    group[1] < min[1] ? group : min
+                );
+
                 // Create Player Record
+                const name = parsed.name || issue.user.login;
+                const charClass = parsed.charClass || 'Adventurer';
                 const newPlayer: Player = {
                     playerId: issue.number,
                     github: {
@@ -88,61 +104,86 @@ export async function runTick() {
                         userId: issue.user.id
                     },
                     character: {
-                        name: parsed.name || issue.user.login,
-                        class: parsed.charClass || 'Adventurer',
-                        title: 'Wanderer',
-                        backstory: parsed.backstory || ''
+                        name: name,
+                        class: charClass,
+                        titles: [],
+                        backstory: parsed.backstory || '',
+                        level: 1,
+                        xp: 0,
+                        clanId: minGroup[0]
                     },
-                    location: 'town_square',
                     status: {
                         alive: true
                     },
                     meta: {
                         joinedDay: gameState.day,
-                        lastActionDay: gameState.day
-                    }
+                        lastActionDay: gameState.day,
+                        gatherFoodCount: 0,
+                        gatherWoodCount: 0,
+                        gatherGoldCount: 0,
+                        collectedFoodCount: 0,
+                        collectedWoodCount: 0,
+                        collectedGoldCount: 0,
+                        exploreCount: 0,
+                        attackCount: 0,
+                        attackMonsterCount: 0,
+                        playerWins: 0,
+                        playerLosses: 0,
+                        monsterKilled: 0,
+                        bossKilled: 0,
+                        monsterEncountered: 0,
+                        attackWinStreak: 0,
+                        attackLoseStreak: 0,
+                        attackedCount: 0
+                    },
+                    message: `Welcome, ${name} the ${charClass}, to ${gameState.clans[minGroup[0]].name}.\nLet's conquer the world together!\n`
                 };
 
                 // Persist to State
                 gameState.players[playerId] = newPlayer;
-
-                // Welcome Comment
-                const welcomeMsg = `Welcome, **${newPlayer.character.name}** the **${newPlayer.character.class}**.\n` +
-                    `You arrive at the **Town Square**.\n` +
-                    `The world will move at the next tick.`;
+                minGroup[1]++;
 
                 console.log(`Onboarding ${newPlayer.character.name}...`);
-                await adapter.postComment(issue.number, welcomeMsg);
-            }
-
-            // --- ACTION FLOW ---
-            const lastComment = await adapter.fetchLastComment(issue.number);
-
-            if (lastComment) {
-                // strict identity check: Comment Author ID must match Issue Author ID
-                if (lastComment.user.id !== issue.user.id) {
-                    console.log(`Ignoring comment from non-owner ${lastComment.user.login} on issue #${issue.number}`);
-                    continue;
+                await adapter.postComment(issue.number, newPlayer.message);
+            } else {
+                existingPlayer.message = ''
+                if (gameState.clans[existingPlayer.character.clanId].defeatedBy) {
+                    console.log(`Player ${existingPlayer.character.name} is from a defeated clan.`);
+                    const minGroup = clans.reduce((min, group) =>
+                        group[1] < min[1] ? group : min
+                    );
+                    existingPlayer.character.clanId = minGroup[0];
+                    existingPlayer.message = `You have been offered refuge by ${gameState.clans[minGroup[0]].name}.\nLet's forget the past and avenge your clan!\n`;
                 }
+                console.log(`Processing action for ${issue.user.login} on issue #${issue.number}`);
 
-                // Bot Check
-                if (lastComment.user.type === 'Bot') {
-                    console.log(`Ignoring bot comment on issue #${issue.number}`);
-                    continue;
+                // --- ACTION FLOW ---
+                const lastComment = await adapter.fetchLastComment(issue.number, issue.user.id, twentyFourHoursAgo);
+
+                if (lastComment) {
+                    // strict identity check: Comment Author ID must match Issue Author ID
+                    if (lastComment.user.id !== issue.user.id) {
+                        console.log(`Ignoring comment from non-owner ${lastComment.user.login} on issue #${issue.number}`);
+                        continue;
+                    }
+
+                    // Bot Check
+                    if (lastComment.user.type === 'Bot') {
+                        console.log(`Ignoring bot comment on issue #${issue.number}`);
+                        continue;
+                    }
+
+                    // Parse Action
+                    const action = parseAction(issue.number.toString(), lastComment.body);
+                    actions.push(action);
+                    console.log(`Action received from ${issue.user.login}: ${action.type}`);
                 }
-
-                // Parse Action
-                const action = parseAction(issue.number.toString(), lastComment.body);
-                actions.push(action);
-                console.log(`Action received from ${issue.user.login}: ${action.type}`);
             }
         }
 
         // 3. Process Turn
         console.log('Processing tick...');
-        // We pass the full player map to the engine
-        const activePlayers = Object.values(gameState.players);
-        const result = processTick(gameState, actions, activePlayers);
+        const result = processTick(gameState, actions);
 
         // 4. Save State
         console.log('Saving new state...');

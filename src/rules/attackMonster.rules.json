@@ -1,0 +1,56 @@
+{
+    "action": "ATTACK_MONSTER",
+    "defaultXp": 7,
+    "rules": [
+        {
+            "dice": {
+                "min": 19
+            },
+            "xp": 11,
+            "kill": true,
+            "messages": [
+                "Against impossible odds, you struck down a monstrous foe. Songs will be sung of this battle.",
+                "Your blade felled a nightmare given flesh.",
+                "You stood alone against terror — and prevailed.",
+                "A legendary victory echoes through the wilds."
+            ]
+        },
+        {
+            "dice": {
+                "min": 16
+            },
+            "xp": 9,
+            "kill": true,
+            "messages": [
+                "You defeated a fearsome creature and emerged victorious.",
+                "The monster fell after a brutal clash.",
+                "You hunted well, earning both experience and scars.",
+                "Your skill carried you through the battle."
+            ]
+        },
+        {
+            "dice": {
+                "max": 2
+            },
+            "xp": 0,
+            "messages": [
+                "You were overwhelmed and forced to flee, shaken by the encounter.",
+                "The monster nearly ended you. Retreat was the only option.",
+                "Fear took hold and you barely escaped alive.",
+                "This foe was far beyond you."
+            ]
+        },
+        {
+            "dice": {
+                "max": 5
+            },
+            "xp": 4,
+            "messages": [
+                "The monsters were too strong today. You escaped with your life.",
+                "You fought bravely but gained little from the encounter.",
+                "The battle taught you humility — and survival.",
+                "You withdrew before things turned fatal."
+            ]
+        }
+    ]
+}

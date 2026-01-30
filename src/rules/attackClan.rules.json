@@ -1,0 +1,77 @@
+{
+    "action": "ATTACK_CLAN",
+    "cost": {
+        "gold": 20
+    },
+    "advantage": {
+        "bonus": 4
+    },
+    "combat": {
+        "win": {
+            "rules": [
+                {
+                    "diceDiff": {
+                        "min": 10
+                    },
+                    "foodSteal": 12,
+                    "woodShield": 6,
+                    "messages": [
+                        "Your assault was overwhelming. ${clanName} broke almost instantly.",
+                        "You crushed ${clanName}'s defenses and seized vast supplies.",
+                        "The raid was swift and decisive, leaving no doubt who prevailed.",
+                        "Your strike left ${clanName} reeling and depleted."
+                    ]
+                },
+                {
+                    "diceDiff": {
+                        "min": 1
+                    },
+                    "foodSteal": 10,
+                    "woodShield": 5,
+                    "messages": [
+                        "You led a successful raid against ${clanName} and returned with stolen provisions.",
+                        "${clanName}'s defenders resisted, but you broke through in the end.",
+                        "Your clan emerged victorious against ${clanName} after fierce fighting.",
+                        "The raid succeeded, though not without effort."
+                    ]
+                }
+            ]
+        },
+        "lose": {
+            "rules": [
+                {
+                    "diceDiff": {
+                        "max": -10
+                    },
+                    "messages": [
+                        "Your forces were completely outmatched and routed.",
+                        "${clanName} crushed your assault before it could begin.",
+                        "Your attack collapsed in chaos and retreat.",
+                        "You were driven back in humiliating defeat against ${clanName}."
+                    ]
+                },
+                {
+                    "diceDiff": {
+                        "max": 0
+                    },
+                    "messages": [
+                        "Your assault failed, and you were forced to retreat.",
+                        "${clanName}'s defenders held strong and repelled your attack.",
+                        "The raid faltered under stiff resistance.",
+                        "You withdrew after suffering setbacks."
+                    ]
+                }
+            ]
+        }
+    },
+    "destruction": {
+        "foodZero": {
+            "messages": [
+                "${clanName} has fallen. Their banners are torn down.",
+                "With no food left, ${clanName} collapses into ruin.",
+                "Starvation finishes what steel began.",
+                "${clanName} is broken and scattered."
+            ]
+        }
+    }
+}

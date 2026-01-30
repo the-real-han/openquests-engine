@@ -1,293 +1,244 @@
-# Game Mechanics & Roadmap
+# OpenQuests – Game Mechanics (v1)
 
-This document describes the **overall game mechanics and technical approach** for a GitHub-native, asynchronous, multiplayer fantasy game. It is intentionally written as a **roadmap**, not a rigid specification. The goal is to guide incremental development while keeping the system simple, extensible, and fun.
-
----
-
-## High-Level Concept
-
-- A persistent fantasy world that progresses **once per day** via GitHub Actions
-- Players participate asynchronously using **GitHub Issues and Comments**
-- The game state lives entirely inside the repository (files + issues)
-- AI is used only for **narrative presentation**, never for game logic
-
-Core pillars:
-- Deterministic mechanics
-- Public, auditable state
-- Collective progression
-- Low-friction participation
+This document defines the **v1 gameplay loop, systems, and UI scope** for OpenQuests. It serves as a practical roadmap rather than a rigid spec.
 
 ---
 
-## 1. Core GitHub-Based Game Mechanics
+## Core Concept
 
-### 1.1 Player Representation
+OpenQuests is a **GitHub-native, asynchronous multiplayer RPG**.
 
-- Each player is represented by **one GitHub Issue**
-- The issue acts as the player’s:
-  - Character sheet
-  - Action log
-  - Chronicle
-- The issue remains open while the character is active
+* Players interact through a web UI and GitHub Issues
+* The world advances once per day via a deterministic "tick"
+* Progress is social (clans), narrative (world logs), and persistent
 
-**Rules:**
-- One issue per player
-- The **last comment before the daily tick** is the player’s action for that day
-- If no valid action is found, the player is considered idle
+The game is designed to remain playable with **dozens or hundreds of players**, without real-time interaction.
 
 ---
 
-### 1.2 Actions
+## World Overview
 
-- Actions are submitted as plain text comments
-- Example actions:
-  - `MOVE forest`
-  - `ATTACK goblin`
-  - `WAIT`
+### Locations (6 Total)
 
-Action parsing is:
-- Strict
-- Deterministic
-- Based on predefined verbs only
+* **5 Clan Bases**
 
-Invalid actions resolve as `WAIT`.
+  * Red Clan
+  * Blue Clan
+  * Yellow Clan
+  * Purple Clan
+  * Black Clan
 
----
+* **1 Neutral Location**
 
-### 1.3 Daily Tick (Game Loop)
+  * Monster-infested zone (PvE, bosses)
 
-- A GitHub Action runs on a fixed schedule (e.g. once per day)
-- The tick performs the following steps:
-
-1. Load current world state from repository files
-2. Read all open player issues
-3. Extract each player’s last action comment
-4. Group players by current location
-5. Resolve actions **by location**, not by individual
-6. Update world state deterministically
-7. Record results back to:
-   - World state files
-   - Player issues (as a daily result comment)
-8. Generate a narrative summary input for AI storytelling
-
-The daily tick is the **only authority** that can mutate the world state.
+Locations are static in v1. There is no free roaming.
 
 ---
 
-### 1.4 World State
+## Clans
 
-- Stored as versioned JSON/YAML files in the repository
-- Includes:
-  - Locations and their states
-  - Enemies and counters
-  - Global progression counters
+* Each clan has:
 
-World state must be:
-- Fully reproducible from repo history
-- Human-readable
-- Stable across refactors
+  * A base location
+  * Shared resource pool
+  * Population (players)
 
----
+### Clan Resources
 
-### 1.5 AI Storytelling (Core Constraint)
+* **Food** – Required for survival
+* **Wood** – Reserved for future features
+* **Gold** – Reserved for future features
 
-- AI never receives raw player input
-- AI only receives **structured outcomes** from the daily tick
-- AI output is purely narrative
+If a clan’s **food reaches 0**, the clan is considered **destroyed**.
 
-Example AI input:
-```json
-{
-  "day": 12,
-  "events": [
-    "3 goblins defeated in Forest",
-    "New path discovered",
-    "Player123 earned title Goblin Bane"
-  ]
-}
-```
-
-AI output is posted as:
-- A daily world story
-- Optional flavor text in player results
+Destroyed clan players become **Refugees** and are reassigned to a surviving clan on the next tick.
 
 ---
 
-## 2. Game UI (GitHub Pages)
+## Player Characters
 
-### 2.1 Purpose
+### On First Login
 
-The UI exists to:
-- Visualize the world state
-- Make the story feel alive
-- Lower the cognitive load of reading raw JSON or issues
+Players choose:
 
-The UI is **not** the source of truth.
+* Character name
+* Class
+* Optional backstory
 
----
+Players are assigned to a **random clan** during the daily tick.
 
-### 2.2 Hosting
+### Classes (Flavor + PvP modifiers only)
 
-- Served via **GitHub Pages**
-- Static frontend (HTML/CSS/JS)
-- Reads world state from committed files or build artifacts
+* Warrior
+* Lancer
+* Archer
+* Monk
+* Adventurer (no bonuses or penalties)
 
----
-
-### 2.3 Initial UI Scope (Minimal)
-
-Early versions should be **read-only**:
-- Current day’s story
-- World map with known locations
-- Current location states
-
-No login or actions required at first.
+Class advantages apply **only** to clan-vs-clan combat.
 
 ---
 
-### 2.4 Player Interaction (Later Phase)
+## Player Actions (1 per day)
 
-Later, the UI may support:
-- GitHub OAuth login
-- Action buttons (Move, Attack, Wait, etc.)
-- Submitting actions by creating GitHub comments via API
+### 1. Gather
 
-Important:
-- UI actions must map 1:1 to valid text actions
-- The backend logic remains unchanged
+* Choose: food | wood | gold
+* Adds resources to **clan pool**
+* Base yield: 1–3 (modified by player level)
 
----
+### 2. Explore
 
-### 2.5 Visual Style
+* Possible outcomes:
 
-- Background image per location
-- “Scroll” or panel showing today’s story
-- Simple, atmospheric presentation
+  * Gain XP
+  * Find resources
+  * Trigger a trap (lose next action)
+  * Rare narrative event (later)
 
-The UI should feel like a **living chronicle**, not a game dashboard.
+### 3. Attack Clan
 
----
+* Choose a target clan
+* System selects a random defender
+* Outcome based on:
 
-## 3. Long-Term Goals & Progression
+  * Dice roll
+  * Class advantage / disadvantage
 
-### 3.1 Character Legacy (Titles)
+Successful attacks steal **food** from the target clan.
 
-Players accumulate lifetime metrics such as:
-- Enemies defeated
-- Days survived
-- Quests completed
-- Participation in major events
+### 4. Attack Monsters (Neutral Location)
 
-Reaching milestones grants **Titles**:
-- Permanent
-- Public
-- Narrative-first (no direct stat buffs by default)
+* Always targets PvE enemies
+* Rewards:
 
-Example titles:
-- Goblin Bane
-- Pioneer
-- Defender of the Old Road
+  * XP
+  * Small resources
+* Risk:
 
-Titles may unlock **narrative or event hooks** when present in a location.
+  * Injury (skip next action)
+
+Occasionally, **boss monsters** may appear (future milestone-triggered feature).
 
 ---
 
-### 3.2 World State Change
+## Leveling System
 
-The world evolves permanently based on collective actions.
+* XP gained from PvE and exploration
+* Levels do **not** affect PvP combat success
 
-Locations may:
-- Change state (stable → threatened → ruined → restored)
-- Unlock new adjacent or hidden locations
+### Level Effects
+
+Each level increases:
+
+* Max resources gathered per action
+* Max resources stolen on successful clan attack
+* Max loot gained from monsters
+
+Levels represent **capacity**, not combat strength.
+
+---
+
+## Titles (Character Legacy)
+
+Titles are permanent, cosmetic achievements earned through play.
 
 Examples:
-- A forest path unlocks after **1,000 goblins** are defeated globally
-- An ancient door opens if **30 players** are present in one location on the same day
 
-Unlocked locations remain available permanently.
+* **Goblin Slayer** – Kill 5 monsters
+* **Head Hunter** – Win 5 clan attacks
+* **Explorer** – Complete 5 successful explores
+* **Provider** – Gather 20 food
+* **Survivor** – Live through clan destruction
 
----
+Titles:
 
-### 3.3 Quests
-
-Quests provide structured, multi-day objectives beyond basic actions.
-
-Types:
-- **Location Quests** (collective progress)
-- **Personal Quests** (individual goals, usually for titles)
-
-Quests:
-- Are predefined
-- Progress incrementally per daily tick
-- Often trigger world changes when completed
+* Appear on character sheet
+* May be referenced in world or location logs
+* Enable future narrative triggers
 
 ---
 
-### 3.4 Meta-Narrative (Future)
+## World Progression
 
-The system should allow for future expansion into:
-- World ages or arcs
-- Global threats
-- Factions and ideological conflicts
+### Daily Tick
 
-No concrete mechanics are required initially, but the architecture should not block them.
+Each day the system:
 
----
+1. Processes all submitted player actions
+2. Resolves combat and exploration
+3. Updates clan resources and populations
+4. Assigns titles
+5. Generates logs
 
-## Minimum Playable Loop (MPL)
-
-The Minimum Playable Loop defines the smallest complete cycle that allows a player to meaningfully participate in the game world. All features must support or extend this loop.
-
-1. Player Joins the World
-A player creates a GitHub Issue using the Player Join issue template.
-The issue represents the player’s identity.
-On the next daily tick:
-If the issue is new, a Player entry is created in gamestate.json.
-The player is assigned:
-A unique playerId
-A starting location
-A character class (from allowed defaults or template selection)
-The system posts a welcome comment confirming successful entry.
-2. Player Submits an Action
-A player submits an action by commenting on their Issue.
-Only the latest valid comment before the daily tick is considered.
-Supported actions are parsed deterministically (e.g. MOVE forest, WAIT).
-Invalid or unrecognized input resolves to a safe default (WAIT).
-3. Daily Tick Resolution
-A scheduled GitHub Action runs once per day.
-The tick performs the following steps in order:
-Load the current gamestate.json
-Fetch all active player issues
-Parse each player’s latest action
-Resolve all actions simultaneously using processTick
-Advance the world day by 1
-Persist the updated game state
-4. World State Updates
-The game state is the single source of truth.
-State changes may include:
-Player location changes
-Status updates
-World events triggered by actions
-Resolution is deterministic and reproducible from inputs.
-5. Player Feedback
-After resolution, the system posts a comment to each player’s Issue:
-Acknowledging the resolved action
-Optionally providing narrative or status feedback
-No real-time interaction exists; all feedback is asynchronous.
-6. Loop Repeats
-Players read the outcome.
-Players submit a new action.
-The next daily tick resolves it.
-This loop repeats indefinitely and constitutes the core gameplay of OpenQuests.
+All outcomes are **deterministic** given the same inputs.
 
 ---
 
-## Development Philosophy
+## Logs
 
-- Start with the smallest playable loop
-- Prefer working code over perfect specs
-- Lock in mechanics only after they prove fun
-- Use specs as guardrails, not handcuffs
+### World Log (Global)
 
-This document serves as a **shared mental model and roadmap**, not a final design contract.
+Published daily:
 
+* Current day
+* Atmospheric flavor text
+* Clan populations
+* Major events (raids, clan destruction)
+
+### Location Log (Per Location)
+
+Shown when viewing a location:
+
+* Location description
+* Clan-specific flavor
+* Population
+* Resource totals
+* Notable milestones (later)
+
+---
+
+## Game UI (v1 Scope)
+
+### Home Page
+
+* World Log (latest day)
+* World Map (6 locations)
+* Login with GitHub (placeholder initially)
+
+### Location Page
+
+* Location description
+* Clan or neutral status
+* Population list
+* Resource totals
+* Location-specific log
+
+### Leaderboard Page
+
+* Clan rankings (by food, population)
+* Notable players (titles only)
+
+### Authenticated UI (Future Step)
+
+When logged in:
+
+* Avatar menu replaces login button
+* "Start an Adventure" (first login)
+* "Go to My Character"
+* Character sheet view
+
+---
+
+## Design Principles
+
+* Asynchronous by default
+* Social progression over individual power
+* Deterministic systems
+* Simple rules, expandable systems
+* Narrative emerges from player behavior
+
+---
+
+This document defines **v1**. Complexity should be added only when it meaningfully improves play.

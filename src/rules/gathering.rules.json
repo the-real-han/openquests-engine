@@ -1,0 +1,63 @@
+{
+    "action": "GATHER",
+    "defaultReward": 10,
+    "rules": [
+        {
+            "dice": {
+                "min": 19
+            },
+            "reward": 12,
+            "messages": [
+                "Fortune smiled on you today. What should have been routine work turned into unexpected abundance.",
+                "The land yielded more than you dared hope for. Timing, skill, and luck aligned perfectly.",
+                "A rare stroke of luck turned simple labor into a remarkable haul.",
+                "You found exactly what you needed — and more — as if the land itself favored you."
+            ]
+        },
+        {
+            "dice": {
+                "min": 16
+            },
+            "reward": 11,
+            "messages": [
+                "Your efforts paid off more than expected. The land was generous today.",
+                "Steady hands and good conditions made this a productive day.",
+                "Things went smoothly, and the yield reflected your effort.",
+                "The work went well, with a bit extra to show for it."
+            ]
+        },
+        {
+            "dice": {
+                "max": 2
+            },
+            "reward": 8,
+            "messages": [
+                "The land resisted you today. Tools broke, paths failed, and progress came at a cost.",
+                "Nothing went right. Broken tools and bad conditions ruined the work.",
+                "You struggled against misfortune, leaving empty-handed and worn down.",
+                "A day plagued by setbacks forced you to abandon much of the effort."
+            ]
+        },
+        {
+            "dice": {
+                "max": 5
+            },
+            "reward": 9,
+            "messages": [
+                "The work was harder than usual, and the yield thinner — but you pressed on.",
+                "Poor conditions slowed you down, leaving less to show for the effort.",
+                "Obstacles and fatigue made this a frustrating task.",
+                "Despite your effort, the land offered little in return."
+            ]
+        },
+        {
+            "reward": 10,
+            "messages": [
+                "You worked hard, and the earth rewarded you fairly.",
+                "The task went as expected. No surprises — just honest labor.",
+                "A solid day’s work brought steady results.",
+                "You gathered what you set out to find through patience and effort."
+            ]
+        }
+    ]
+}

@@ -1,6 +1,8 @@
 import { Action } from '@openquests/schema';
 
-export const VALID_ACTIONS = ['MOVE', 'ATTACK', 'WAIT'] as const;
+export const VALID_ACTIONS = ['GATHER', 'EXPLORE', 'ATTACK', 'WAIT'] as const;
+export const VALID_RESOURCES = ['food', 'wood', 'gold'];
+export const VALID_TARGETS = ['blue_base', 'red_base', 'purple_base', 'yellow_base', 'black_base', 'monsters_base'];
 
 export function parseAction(playerId: string, commentBody: string): Action {
     // Normalize input
@@ -9,13 +11,17 @@ export function parseAction(playerId: string, commentBody: string): Action {
     const command = parts[0].toUpperCase();
 
     switch (command) {
-        case 'MOVE':
-            if (parts.length < 2) return { playerId, type: 'WAIT' };
-            return { playerId, type: 'MOVE', target: parts.slice(1).join(' ') };
+        case 'GATHER':
+            if (parts.length < 2 || !VALID_RESOURCES.includes(parts[1].toLowerCase())) return { playerId, type: 'WAIT' };
+            return { playerId, type: 'GATHER', target: parts[1].toLowerCase() };
+
+        case 'EXPLORE':
+            if (parts.length < 2 || !VALID_TARGETS.includes(parts[1].toLowerCase())) return { playerId, type: 'WAIT' };
+            return { playerId, type: 'EXPLORE', target: parts[1].toLowerCase() };
 
         case 'ATTACK':
-            if (parts.length < 2) return { playerId, type: 'WAIT' };
-            return { playerId, type: 'ATTACK', target: parts.slice(1).join(' ') };
+            if (parts.length < 2 || !VALID_TARGETS.includes(parts[1].toLowerCase())) return { playerId, type: 'WAIT' };
+            return { playerId, type: 'ATTACK', target: parts[1].toLowerCase() };
 
         case 'WAIT':
             return { playerId, type: 'WAIT' };

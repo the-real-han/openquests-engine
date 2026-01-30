@@ -24,10 +24,9 @@ export interface IssueSummary {
 
 export interface GameInputs {
     fetchOpenIssues(): Promise<IssueSummary[]>;
-    fetchLastComment(issueNumber: number): Promise<IssueComment | null>;
+    fetchLastComment(issueNumber: number, userId: number, since: string): Promise<IssueComment | null>;
     postComment(issueNumber: number, body: string): Promise<void>;
     addLabel(issueNumber: number, label: string): Promise<void>;
-    findOrCreateWorldLogIssue(): Promise<number>;
 }
 
 export class GitHubAdapter implements GameInputs {
@@ -62,17 +61,21 @@ export class GitHubAdapter implements GameInputs {
         }));
     }
 
-    async fetchLastComment(issueNumber: number): Promise<IssueComment | null> {
+    async fetchLastComment(issueNumber: number, userId: number, since: string): Promise<IssueComment | null> {
         const comments = await this.octokit.rest.issues.listComments({
             owner: this.owner,
             repo: this.repo,
             issue_number: issueNumber,
             per_page: 100,
+            since
         });
 
         if (comments.data.length === 0) return null;
 
-        const last = comments.data[comments.data.length - 1];
+        const filterComments = comments.data.filter(c => c.user?.id === userId);
+        if (filterComments.length === 0) return null;
+
+        const last = filterComments[filterComments.length - 1];
         return {
             body: last.body || '',
             user: {
@@ -101,30 +104,6 @@ export class GitHubAdapter implements GameInputs {
             labels: [label]
         });
     }
-
-    async findOrCreateWorldLogIssue(): Promise<number> {
-        const issues = await this.octokit.rest.issues.listForRepo({
-            owner: this.owner,
-            repo: this.repo,
-            state: 'open',
-            labels: 'world-log',
-            per_page: 1
-        });
-
-        if (issues.data.length > 0) {
-            return issues.data[0].number;
-        }
-
-        const newIssue = await this.octokit.rest.issues.create({
-            owner: this.owner,
-            repo: this.repo,
-            title: '📜 World Log',
-            body: 'Chronicles of the realm...',
-            labels: ['world-log']
-        });
-
-        return newIssue.data.number;
-    }
 }
 
 export class MockAdapter implements GameInputs {
@@ -137,7 +116,7 @@ export class MockAdapter implements GameInputs {
         ];
     }
 
-    async fetchLastComment(issueNumber: number): Promise<IssueComment | null> {
+    async fetchLastComment(issueNumber: number, userId: number, since: string): Promise<IssueComment | null> {
         console.log(`[MOCK] Fetching last comment for issue ${issueNumber}...`);
         if (issueNumber === 1) {
             return { body: 'MOVE forest', user: { login: 'player1', id: 101, type: 'User' }, created_at: new Date().toISOString() };
@@ -157,10 +136,5 @@ export class MockAdapter implements GameInputs {
 
     async addLabel(issueNumber: number, label: string): Promise<void> {
         console.log(`[MOCK] Adding label "${label}" to issue ${issueNumber}`);
-    }
-
-    async findOrCreateWorldLogIssue(): Promise<number> {
-        console.log('[MOCK] finding/creating World Log issue...');
-        return 99; // Mock Log Issue ID
     }
 }

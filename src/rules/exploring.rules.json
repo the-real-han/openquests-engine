@@ -1,0 +1,333 @@
+{
+    "action": "EXPLORE",
+    "outcomes": [
+        {
+            "type": "xp",
+            "weight": 2
+        },
+        {
+            "type": "wood",
+            "weight": 2
+        },
+        {
+            "type": "food",
+            "weight": 2
+        },
+        {
+            "type": "gold",
+            "weight": 2
+        },
+        {
+            "type": "trap",
+            "weight": 2
+        }
+    ],
+    "resolution": {
+        "xp": {
+            "rules": [
+                {
+                    "dice": {
+                        "min": 19
+                    },
+                    "reward": 9,
+                    "messages": [
+                        "You ventured far beyond known paths and returned stronger in spirit.",
+                        "The journey pushed you to your limits, forging hard-earned wisdom.",
+                        "Danger sharpened your instincts and left you more experienced.",
+                        "You braved the unknown and learned lessons few dare to seek."
+                    ]
+                },
+                {
+                    "dice": {
+                        "min": 16
+                    },
+                    "reward": 7,
+                    "messages": [
+                        "The road tested you, teaching valuable lessons along the way.",
+                        "Your travels challenged you, and you came back wiser.",
+                        "You learned through hardship and persistence.",
+                        "Experience came not easily, but it came nonetheless."
+                    ]
+                },
+                {
+                    "dice": {
+                        "max": 2
+                    },
+                    "reward": 0,
+                    "messages": [
+                        "Your exploration went poorly, leaving you shaken and empty-handed.",
+                        "You lost your way and gained nothing from the journey.",
+                        "The dangers overwhelmed you, forcing a retreat.",
+                        "Misfortune plagued your travels from start to finish."
+                    ]
+                },
+                {
+                    "dice": {
+                        "max": 5
+                    },
+                    "reward": 3,
+                    "messages": [
+                        "You struggled through unfamiliar terrain with little to show.",
+                        "The journey taught you caution, if little else.",
+                        "You survived the road, but learned less than hoped.",
+                        "The land resisted your efforts at every turn."
+                    ]
+                },
+                {
+                    "reward": 5,
+                    "messages": [
+                        "You explored the surroundings and gained experience from the road itself.",
+                        "The journey added to your growing knowledge of the world.",
+                        "You returned with modest insight earned through travel.",
+                        "The road offered quiet lessons to those willing to listen."
+                    ]
+                }
+            ]
+        },
+        "wood": {
+            "rules": [
+                {
+                    "dice": {
+                        "min": 19
+                    },
+                    "reward": 9,
+                    "messages": [
+                        "You discovered ancient, sturdy trees perfect for your clan’s needs.",
+                        "A hidden grove yielded exceptional timber.",
+                        "The forest revealed its richest bounty to you.",
+                        "You returned with high-quality wood few ever find."
+                    ]
+                },
+                {
+                    "dice": {
+                        "min": 16
+                    },
+                    "reward": 7,
+                    "messages": [
+                        "The forest yielded solid wood after steady effort.",
+                        "You gathered useful timber with practiced care.",
+                        "Careful work brought back valuable lumber.",
+                        "The trees offered more than expected today."
+                    ]
+                },
+                {
+                    "dice": {
+                        "max": 2
+                    },
+                    "reward": 0,
+                    "messages": [
+                        "Rotten trunks and broken tools ruined your efforts.",
+                        "The forest fought back, leaving you empty-handed.",
+                        "Nothing you found was fit to bring home.",
+                        "Your tools failed before the wood did."
+                    ]
+                },
+                {
+                    "dice": {
+                        "max": 5
+                    },
+                    "reward": 3,
+                    "messages": [
+                        "The forest resisted you, yielding little.",
+                        "You gathered scraps where you hoped for lumber.",
+                        "The trees offered only what they could spare.",
+                        "Your labor earned only modest results."
+                    ]
+                },
+                {
+                    "reward": 5,
+                    "messages": [
+                        "You gathered usable wood from the surrounding area.",
+                        "The forest provided enough to justify the effort.",
+                        "You returned with timber suitable for use.",
+                        "Your steady work brought back a fair haul."
+                    ]
+                }
+            ]
+        },
+        "food": {
+            "rules": [
+                {
+                    "dice": {
+                        "min": 19
+                    },
+                    "reward": 9,
+                    "messages": [
+                        "You found an abundant source of food, enough to lift spirits back home.",
+                        "Hunting and foraging exceeded all expectations.",
+                        "The land offered a feast to those who sought it.",
+                        "Your packs overflowed with fresh provisions."
+                    ]
+                },
+                {
+                    "dice": {
+                        "min": 16
+                    },
+                    "reward": 7,
+                    "messages": [
+                        "Foraging went well, filling your packs.",
+                        "The hunt was successful and steady.",
+                        "You returned with food secured through patience.",
+                        "The land proved generous today."
+                    ]
+                },
+                {
+                    "dice": {
+                        "max": 2
+                    },
+                    "reward": 0,
+                    "messages": [
+                        "Scarcity and bad luck left you hungry and empty-handed.",
+                        "Prey was nowhere to be found.",
+                        "The land offered nothing but disappointment.",
+                        "Your search ended without reward."
+                    ]
+                },
+                {
+                    "dice": {
+                        "max": 5
+                    },
+                    "reward": 3,
+                    "messages": [
+                        "Food was scarce, and every bite had to be earned.",
+                        "You scraped together what little you could find.",
+                        "The hunt was difficult and unrewarding.",
+                        "The land tested your patience."
+                    ]
+                },
+                {
+                    "reward": 5,
+                    "messages": [
+                        "You gathered enough food to sustain your people.",
+                        "The land provided modest nourishment.",
+                        "You returned with provisions for the clan.",
+                        "Your efforts secured basic supplies."
+                    ]
+                }
+            ]
+        },
+        "gold": {
+            "rules": [
+                {
+                    "dice": {
+                        "min": 19
+                    },
+                    "reward": 9,
+                    "messages": [
+                        "You uncovered a hidden vein of gold, a rare and valuable find.",
+                        "A forgotten cache revealed its riches.",
+                        "Your discovery could change your clan’s fortunes.",
+                        "You struck gold where none expected it."
+                    ]
+                },
+                {
+                    "dice": {
+                        "min": 16
+                    },
+                    "reward": 7,
+                    "messages": [
+                        "Careful searching revealed traces of gold worth collecting.",
+                        "Your efforts uncovered valuable deposits.",
+                        "You extracted gold through patience and skill.",
+                        "The land rewarded your persistence."
+                    ]
+                },
+                {
+                    "dice": {
+                        "max": 2
+                    },
+                    "reward": 0,
+                    "messages": [
+                        "False leads forced you to abandon the search.",
+                        "The ground yielded nothing of value.",
+                        "Your search ended in frustration.",
+                        "The land hid its treasures well today."
+                    ]
+                },
+                {
+                    "dice": {
+                        "max": 5
+                    },
+                    "reward": 3,
+                    "messages": [
+                        "The land yielded little, testing your resolve.",
+                        "You found only small traces of value.",
+                        "The effort outweighed the reward.",
+                        "You recovered barely enough to matter."
+                    ]
+                },
+                {
+                    "reward": 5,
+                    "messages": [
+                        "You recovered some gold after a long search.",
+                        "Your efforts uncovered modest treasure.",
+                        "You returned with gold worth the effort.",
+                        "Persistence paid off with a small reward."
+                    ]
+                }
+            ]
+        },
+        "trap": {
+            "rules": [
+                {
+                    "dice": {
+                        "min": 19
+                    },
+                    "reward": 0,
+                    "xp": 2,
+                    "messages": [
+                        "You ventured deep into the unknown and emerged wiser, your instincts sharpened by danger.",
+                        "The journey challenged you, and you learned valuable lessons along the way.",
+                        "The forest was not gentle today, and you returned with new knowledge.",
+                        "You emerged from the woods with a deeper understanding of the natural world."
+                    ]
+                },
+                {
+                    "dice": {
+                        "min": 16
+                    },
+                    "xp": 0,
+                    "messages": [
+                        "You spotted the trap just in time and slipped away unharmed.",
+                        "A sharp instinct saved you from disaster.",
+                        "You sensed danger early and avoided it.",
+                        "Luck and awareness carried you safely through."
+                    ]
+                },
+                {
+                    "dice": {
+                        "max": 2
+                    },
+                    "amount": 15,
+                    "messages": [
+                        "Disaster struck. The trap cost your clan valuable ${resource}.",
+                        "You triggered a deadly trap and paid dearly in ${resource}.",
+                        "The ground betrayed you, draining precious ${resource}.",
+                        "A devastating mistake cost your clan ${resource}."
+                    ]
+                },
+                {
+                    "dice": {
+                        "max": 5
+                    },
+                    "amount": 10,
+                    "messages": [
+                        "You escaped, but not without loss. Some ${resource} had to be abandoned.",
+                        "The trap claimed a share of your clan’s ${resource}.",
+                        "You survived, but the cost in ${resource} was real.",
+                        "The danger left scars on your supplies."
+                    ]
+                },
+                {
+                    "amount": 5,
+                    "messages": [
+                        "The path was treacherous. You paid a price in ${resource}, but survived.",
+                        "A minor trap claimed some ${resource}.",
+                        "You stumbled into danger and lost a bit of ${resource}.",
+                        "The land demanded its toll in ${resource}."
+                    ]
+                }
+            ]
+        }
+    }
+}
