@@ -135,7 +135,7 @@ export async function runTick() {
                         attackLoseStreak: 0,
                         attackedCount: 0
                     },
-                    message: `Welcome, ${name} the ${charClass}, to ${gameState.clans[minGroup[0]].name}.\nLet's conquer the world together!\n`
+                    message: `Welcome, ${name} the ${charClass}, to ${gameState.clans[minGroup[0]].name}.\nLet's conquer the world together!`
                 };
 
                 // Persist to State
@@ -152,7 +152,7 @@ export async function runTick() {
                         group[1] < min[1] ? group : min
                     );
                     existingPlayer.character.clanId = minGroup[0];
-                    existingPlayer.message = `You have been offered refuge by ${gameState.clans[minGroup[0]].name}.\nLet's forget the past and avenge your clan!\n`;
+                    existingPlayer.message = `You have been offered refuge by ${gameState.clans[minGroup[0]].name}.\nDon't forget the past and avenge your clan!`;
                 }
                 console.log(`Processing action for ${issue.user.login} on issue #${issue.number}`);
 

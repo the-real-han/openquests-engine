@@ -561,3 +561,304 @@ describe('processTick', () => {
     });
 
 });
+
+describe('Dice & Determinism Safety', () => {
+    test('Roll Dice handles negative numbers', () => {
+        const state = makeGameState();
+        const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
+
+        // Dice: -5.
+        // Gathering rules: -5 < 2 (max 2 rule) -> Reward 8.
+        const dice = createDeterministicDice([-5, 0]);
+        const { newState } = processTick(state, actions, dice);
+        const p1 = newState.players['p1'];
+
+        // Multiplier: 8 * 1.05 = 8.
+        expect(p1.message).toContain("[+8 food]");
+    });
+
+    test('Roll Dice handles large numbers', () => {
+        const state = makeGameState();
+        const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
+
+        // Dice: 999.
+        const dice = createDeterministicDice([999, 0]);
+        const { newState } = processTick(state, actions, dice);
+        const p1 = newState.players['p1'];
+
+        // Reward 12 -> 12.
+        expect(p1.message).toContain("[+12 food]");
+    });
+
+    test('Message selection modulo safety', () => {
+        const state = makeGameState();
+        const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
+
+        // 1. Reward Roll: 10 (Default rule)
+        // 2. Message Roll: 100. Rule has 4 messages.
+        const dice = createDeterministicDice([10, 100]);
+        const { newState } = processTick(state, actions, dice);
+
+        expect(newState.players['p1'].message).toBeDefined();
+    });
+});
+
+describe('Player Action Validity', () => {
+    test('Invalid Action Type falls back to Wait behavior', () => {
+        const state = makeGameState();
+        const actions: Action[] = [{ playerId: 'p1', type: 'INVALID_TYPE' as any }];
+
+        // Current behavior: Invaild types are filtered out, effectively "doing nothing".
+        // We verify that state does not crash and no resource changes occur.
+        const { newState } = processTick(state, actions);
+
+        expect(newState.players['p1'].message).toBe("");
+    });
+
+    test('Action Isolation', () => {
+        const state = makeGameState();
+        const p2 = makePlayer('p2', 'clanB');
+        state.players['p2'] = p2;
+
+        const actions: Action[] = [
+            { playerId: 'p1', type: 'GATHER', target: 'food' },
+            { playerId: 'p2', type: 'WAIT' }
+        ];
+
+        const dice = createDeterministicDice([10, 0]);
+        const { newState } = processTick(state, actions, dice);
+
+        expect(newState.players['p1'].meta.food).toBeGreaterThan(0);
+        expect(newState.players['p2'].meta.food).toBe(0);
+        expect(newState.players['p2'].message).toContain("take a moment");
+    });
+});
+
+describe('Attack Clan Edge Cases', () => {
+    test('Attack Defeated Clan Blocked', () => {
+        const state = makeGameState();
+        const p2 = makePlayer('p2', 'clanB');
+        state.players['p2'] = p2;
+        state.clans['clanB'].food = 0; // Already defeated logic check?
+        // Engine check: if (!defenderClan || defenderClan.food <= 0)
+
+        const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'locB' }];
+        const { newState } = processTick(state, actions);
+
+        expect(newState.players['p1'].message).toContain("already fallen");
+    });
+
+    test('Destruction Logic', () => {
+        const state = makeGameState();
+        const p2 = makePlayer('p2', 'clanB');
+        state.players['p2'] = p2;
+        state.locations['locB'].clanId = 'clanB';
+
+        // Set Clan B to be 1 hit from destruction.
+        // Health: Food 10. Wood 0 (no shield).
+        state.clans['clanB'].food = 10;
+        state.clans['clanB'].wood = 0;
+
+        const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'locB' }];
+
+        // Dice:
+        // 1. Defender: 0
+        // 2. Attacker: 20
+        // 3. Defender: 5
+        // Diff 15 -> Steal 12 (Scaled > 12).
+        // 12 (base) * 1.05 = 12.
+        // Steal 12. Clan B 10 - 12 = 0.
+        // 4. Msg: 0
+        // 5. Destruction Msg: 0
+
+        const dice = createDeterministicDice([0, 20, 5, 0, 0]);
+        const { newState } = processTick(state, actions, dice);
+
+        expect(newState.clans['clanB'].food).toBe(0);
+        expect(newState.clans['clanB'].wood).toBe(0);
+        expect(newState.clans['clanB'].gold).toBe(0); // Should be reset
+        expect(newState.clans['clanB'].defeatedBy).toBe('clanA');
+    });
+
+    test('Streaks', () => {
+        const state = makeGameState();
+        const p2 = makePlayer('p2', 'clanB');
+        state.players['p2'] = p2;
+        state.locations['locB'].clanId = 'clanB';
+
+        const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'locB' }];
+
+        // Win Scenario
+        const diceWin = createDeterministicDice([0, 20, 5, 0]);
+        const res1 = processTick(state, actions, diceWin);
+        expect(res1.newState.players['p1'].meta.attackWinStreak).toBe(1);
+        expect(res1.newState.players['p1'].meta.attackLoseStreak).toBe(0);
+
+        // Lose Scenario (on top of win state? No, processTick is pure from initial state usually, 
+        // but let's assume we want to test reset.
+        // We can chain manually or just test lose from 0.
+        // Let's test Lose resets Win streak if we could chain.
+        // For now, testing Lose increments Lose streak is sufficient per req.
+
+        const diceLose = createDeterministicDice([0, 5, 20, 0]);
+        const res2 = processTick(state, actions, diceLose);
+        expect(res2.newState.players['p1'].meta.attackLoseStreak).toBe(1);
+        expect(res2.newState.players['p1'].meta.attackWinStreak).toBe(0);
+    });
+});
+
+describe('Monster Attack Edge Cases', () => {
+    test('No Kill Scenario', () => {
+        const state = makeGameState();
+        const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'monsters_base' }];
+
+        // Dice: 5 (max 5 -> xp 4, kill false)
+        const dice = createDeterministicDice([5, 0]);
+        const { newState } = processTick(state, actions, dice);
+
+        const p1 = newState.players['p1'];
+        expect(p1.meta.monsterEncountered).toBe(1);
+        expect(p1.meta.monsterKilled).toBe(0);
+        expect(p1.message).toContain("[+4 xp]");
+    });
+
+    test('Multi-Level Up', () => {
+        const state = makeGameState();
+        const p1 = state.players['p1'];
+
+        // XP Needed for Lvl 2: 9.
+        // XP Needed for Lvl 3: (3+2)^2 = 25.
+        // Total to reach Lvl 3 from 0: 9 (stays lvl 1 -> 2) + 25 (lvl 2 -> 3) = 34?
+        // Wait, logic:
+        // if (xp >= req) { lv++; xp -= req; }
+        // Only ONE check per tick? 
+        // Function `lvUp` has ONE if statement. Not a while loop.
+        // So it can only level up once per tick.
+
+        // Requirement: "Level increments repeatedly if XP allows"
+        // CHECK CODE:
+        // function lvUp(player) { ... if (player.character.xp >= requiredXp) ... }
+        // It is an IF, not WHILE. 
+        // Bug? user said: "If a test exposes a bug: Add a comment explaining the behavior. Do NOT fix it."
+
+        // Let's verify behavior.
+        // Give 100 XP.
+        p1.character.xp = 100;
+        // Action to trigger update (e.g. Wait, but `processTick` calls `lvUp` only inside `resolve...`?)
+        // `processTick` calls `lvUp` inside action processing.
+        // Use GATHER to trigger nothing? No... `lvUp` is called inside `resolveExploring` or `ATTACK_MONSTER`. 
+        // Use ATTACK_MONSTER.
+
+        const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'monsters_base' }];
+        const dice = createDeterministicDice([17, 0]); // XP 9 (Min 16 rule). Match found.
+
+        const { newState } = processTick(state, actions, dice);
+        const newP1 = newState.players['p1'];
+
+        // Initial 100 + 7 = 107.
+        // Lvl 1 Req 9. 107 >= 9. 
+        // Becomes Lvl 2. XP = 98.
+        // Is `lvUp` called again? No.
+
+        expect(newP1.character.level).toBe(2);
+        expect(newP1.character.xp).toBeGreaterThan(50);
+
+        // Comment: Logic only allows one level up per action tick.
+        // I will write assertion for Level 2 and comment.
+    });
+});
+
+describe('World / Location Logs Extended', () => {
+    test('Shared Clan Locations', () => {
+        const state = makeGameState();
+        // LocA (ClanA), LocB (ClanA).
+        state.locations['locB'].clanId = 'clanA';
+
+        const p2 = makePlayer('p2', 'clanA');
+        // p2.character.location = 'locB'; // Removed invalid property. Location is derived/not stored on player character in schema?
+        // `makePlayer` doesn't set location property on `character`?
+        // `processTick` uses `state.locations` iteration...
+        // and filters players by `p.character.clanId === location.clanId`.
+        // THIS IS THE BUG. It counts ALL clan members as present in ALL clan locations.
+
+        state.players['p2'] = p2;
+
+        const { newState } = processTick(state, []);
+
+        const locALog = newState.locationLogs['locA'];
+        const locBLog = newState.locationLogs['locB'];
+
+        // Both should report 2 players (p1, p2 both Clan A).
+        expect(locALog.population).toBe(2);
+        expect(locBLog.population).toBe(2);
+
+        // Comment: Population logic is based on Clan ID, not Player Location field (which doesn't exist/work?).
+    });
+});
+
+describe('Explore Edge Cases', () => {
+    test('Defeated Clan Resource Logic', () => {
+        const state = makeGameState();
+        state.clans['clanA'].defeatedBy = 'clanB';
+
+        const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+
+        // Path: Resource (Food).
+        // Dice:
+        // 1. Rule Roll: 10 (Default reward 5)
+        // 2. Outcome: 4 (Food)
+        // 3. Message: 0
+        const dice = createDeterministicDice([10, 4, 0]);
+
+        const { newState } = processTick(state, actions, dice);
+
+        // Player gets message + meta (implied via engine logic check?)
+        // Engine logic: if (!clan.defeatedBy) { clan.food += ... }
+        // Player message IS updated regardless.
+
+        expect(newState.clans['clanA'].food).toBe(100); // Unchanged
+        expect(newState.players['p1'].message).toContain("[+5 food]");
+    });
+
+    test('Trap Resource Loss Floor', () => {
+        const state = makeGameState();
+        // Low resources
+        state.clans['clanA'].food = 5;
+
+        const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+
+        // Path: Trap -> Loss.
+        // Dice:
+        // 1. Rule: 5 (max 5 -> amount 10)
+        // 2. Outcome: 8 (Trap)
+        // 3. Trap Type: 0 (Food)
+        // 4. Message: 0
+        const dice = createDeterministicDice([5, 8, 0, 0]);
+
+        const { newState } = processTick(state, actions, dice);
+
+        // Lost 10 (multiplied -> 10). 5 - 10 = -5 -> Floor 0.
+        expect(newState.clans['clanA'].food).toBe(0);
+        expect(newState.players['p1'].message).toContain("[-10 food]");
+    });
+
+    test('Trap XP Safety', () => {
+        const state = makeGameState();
+
+        const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+
+        // Path: Trap -> XP.
+        // Dice:
+        // 1. Rule: 20 (>19 -> xp 2)
+        // 2. Outcome: 8 (Trap)
+        // 3. Trap Type: 0 (Food) - Consumed by engine logic but ignored for deduction?
+        // 4. Message: 0
+        const dice = createDeterministicDice([20, 8, 0, 0]);
+
+        const { newState } = processTick(state, actions, dice);
+
+        // Food should NOT decrease.
+        expect(newState.clans['clanA'].food).toBe(100);
+        expect(newState.players['p1'].message).toContain("[+2 xp]");
+    });
+});

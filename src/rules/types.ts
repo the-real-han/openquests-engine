@@ -33,7 +33,6 @@ export type ExploreRuleSet = {
     outcomes: WeightedOutcome[]
     resolution: Record<string, {
         rules: ResolutionRule[]
-        loss?: ResolutionRule[]
     }>
 }
 

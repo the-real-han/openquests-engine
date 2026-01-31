@@ -7,6 +7,10 @@ import { AttackClanResolutionRule, ExploreRuleSet, GatheringRuleSet, ResolutionR
 import ATTACK_MONSTER_RULES from "./rules/attackMonster.rules.json";
 import { AttackMonsterRuleSet, AttackMonsterRule } from "./rules/types";
 
+function pushMessage(p: Player, msg: string) {
+    p.message += (p.message ? "\n" : "") + msg;
+}
+
 function resolveAttackMonster(dice: number): AttackMonsterRule {
     const ruleset = ATTACK_MONSTER_RULES as AttackMonsterRuleSet;
     return ruleset.rules.find(r => matchDice(dice, r.dice))!;
@@ -74,8 +78,11 @@ function resolveAttackClan(
     };
 }
 
+const lvBonusCap = 2
+const lvBonusMultiplier = 1.05
+
 function multiplyXp(baseXp: number, player: Player) {
-    return Math.floor(baseXp * Math.pow(1.1, player.character.level))
+    return Math.floor(baseXp * Math.min(Math.pow(lvBonusMultiplier, player.character.level), lvBonusCap))
 }
 
 function lvUp(player: Player) {
@@ -85,12 +92,12 @@ function lvUp(player: Player) {
     if (player.character.xp >= requiredXp) {
         player.character.level++;
         player.character.xp -= requiredXp;
-        player.message += ` [LEVEL UP: ${player.character.level}]`;
+        pushMessage(player, `[LEVEL UP: ${player.character.level}]`);
     }
 }
 
 function multiplyResources(baseAmount: number, player: Player) {
-    return Math.floor(baseAmount * Math.pow(1.05, player.character.level))
+    return Math.floor(baseAmount * Math.min(Math.pow(lvBonusMultiplier, player.character.level), lvBonusCap))
 }
 
 type DiceFn = () => number;
@@ -177,7 +184,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
                 clan.defeatedBy ? null : clan.gold += finalReward;
                 break;
         }
-        player.message += `[+${finalReward} ${action.target}] ${messages[rollDice() % messages.length]}`;
+        pushMessage(player, `[+${finalReward} ${action.target}] ${messages[rollDice() % messages.length]}`);
     }
 
     for (const action of explorationActions) {
@@ -201,12 +208,12 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
             if (rule.xp) {
                 const xp = multiplyXp(rule.xp, player);
                 player.character.xp += xp;
-                player.message += `[+${xp} xp] ${rule.messages[rollDice() % rule.messages.length]}`;
+                pushMessage(player, `[+${xp} xp] ${rule.messages[rollDice() % rule.messages.length]}`);
                 lvUp(player);
             } else {
                 const finalAmount = multiplyResources(rule.amount!, player);
                 clan[resource] = Math.max(0, clan[resource] - finalAmount);
-                player.message += `[-${finalAmount} ${resource}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", resource)}`;
+                pushMessage(player, `[-${finalAmount} ${resource}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", resource)}`);
             }
         } else {
             const rule = resolveExploring(diceRolled, ruleset.rules);
@@ -215,14 +222,14 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
             if (outcome === "xp") {
                 const xp = multiplyXp(reward, player);
                 player.character.xp += xp;
-                player.message += `[+${xp} xp] ${rule.messages[rollDice() % rule.messages.length]}`;
+                pushMessage(player, `[+${xp} xp] ${rule.messages[rollDice() % rule.messages.length]}`);
                 lvUp(player);
             } else if (!clan.defeatedBy) {
                 reward = multiplyResources(reward, player);
                 player.meta[outcome as ClanResource] += reward;
                 clan[outcome as ClanResource] += reward;
             }
-            player.message += `[+${reward} ${outcome}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", outcome)}`;
+            pushMessage(player, `[+${reward} ${outcome}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", outcome)}`);
         }
         player.meta.exploreCount++;
     }
@@ -235,25 +242,25 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         const attackerClan = nextState.clans[attacker.character.clanId];
         const targetLocation = nextState.locations[action.target!];
         if (!targetLocation) {
-            attacker.message += "Your target could not be found.";
+            pushMessage(attacker, "Your target could not be found.");
             continue;
         }
 
         const defenderClan = nextState.clans[targetLocation.clanId];
         if (!defenderClan || defenderClan.food <= 0) {
-            attacker.message += "The clan you sought has already fallen.";
+            pushMessage(attacker, "The clan you sought has already fallen.");
             continue;
         }
 
         if (defenderClan.id === attackerClan.id) {
-            attacker.message += "Brothen, point your weapon at your enemy. You cannot attack your own clan.";
+            pushMessage(attacker, "Brother, point your weapon at your enemy. You cannot attack your own clan.");
             continue;
         }
 
         // Cost
         const goldCost = ATTACK_CLAN_RULES.cost.gold;
         if (attackerClan.gold < goldCost) {
-            attacker.message += "Your clan lacks the gold to wage war.";
+            pushMessage(attacker, "Your clan lacks the gold to wage war.");
             continue;
         }
         attackerClan.gold -= goldCost;
@@ -262,7 +269,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
             p => p.character.clanId === defenderClan.id
         );
         if (!defenders.length) {
-            attacker.message += "You found no defenders — only ruins.";
+            pushMessage(attacker, "You found no defenders — only ruins.");
             continue;
         }
 
@@ -297,14 +304,16 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
                 attackerClan.food += food;
             }
 
-            attacker.message += `[+${food} food] ${msg}`;
+            pushMessage(attacker, `[+${food} food] ${msg}`);
 
             if (defenderClan.food === 0) {
+                defenderClan.wood = 0;
+                defenderClan.gold = 0;
                 defenderClan.defeatedBy = attackerClan.id;
                 const finalMsg = ATTACK_CLAN_RULES.destruction.foodZero.messages[rollDice() % ATTACK_CLAN_RULES.destruction.foodZero.messages.length].replace("${clanName}", defenderClan.name)
-                attacker.message += "\n" + finalMsg;
+                pushMessage(attacker, finalMsg);
                 defenders.forEach(d => {
-                    d.message = finalMsg + "\n" + d.message;
+                    pushMessage(d, finalMsg);
                 });
             }
         } else {
@@ -314,7 +323,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
             attacker.meta.playerLosses++;
             defender.meta.attackedCount++;
             defender.meta.playerWins++;
-            attacker.message += msg;
+            pushMessage(attacker, msg);
         }
     }
 
@@ -338,7 +347,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         const msg =
             rule.messages[rollDice() % rule.messages.length];
 
-        player.message += `[+${xp} xp] ${msg}`;
+        pushMessage(player, `[+${xp} xp] ${msg}`);
 
         lvUp(player);
     }
@@ -352,7 +361,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
             continue;
         }
 
-        player.message += waitMessage()
+        pushMessage(player, waitMessage());
     }
 
     // TODO

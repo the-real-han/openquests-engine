@@ -75,7 +75,10 @@ export class GitHubAdapter implements GameInputs {
         const filterComments = comments.data.filter(c => c.user?.id === userId);
         if (filterComments.length === 0) return null;
 
-        const last = filterComments[filterComments.length - 1];
+        const last = filterComments.sort(
+            (a, b) =>
+                new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        ).at(-1)!;
         return {
             body: last.body || '',
             user: {
