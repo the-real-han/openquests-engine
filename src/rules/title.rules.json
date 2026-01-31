@@ -1,0 +1,402 @@
+[
+    {
+        "id": "forager",
+        "title": "The Forager",
+        "requirement": {
+            "field": "meta.gatherFoodCount",
+            "operator": ">=",
+            "value": 10
+        },
+        "bonus": {
+            "food": 1,
+            "wood": 0,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "harvester",
+        "title": "The Harvester",
+        "requirement": {
+            "field": "meta.gatherFoodCount",
+            "operator": ">=",
+            "value": 25
+        },
+        "bonus": {
+            "food": 1,
+            "wood": 0,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "hoarder",
+        "title": "The Hoarder",
+        "requirement": {
+            "field": "meta.food",
+            "operator": ">=",
+            "value": 400
+        },
+        "bonus": {
+            "food": 1,
+            "wood": 0,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "timberhand",
+        "title": "Timberhand",
+        "requirement": {
+            "field": "meta.gatherWoodCount",
+            "operator": ">=",
+            "value": 10
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 1,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "lumberjack",
+        "title": "Lumberjack",
+        "requirement": {
+            "field": "meta.gatherWoodCount",
+            "operator": ">=",
+            "value": 25
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 1,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "collector",
+        "title": "The Wood Collector",
+        "requirement": {
+            "field": "meta.wood",
+            "operator": ">=",
+            "value": 400
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 1,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "prospector",
+        "title": "The Prospector",
+        "requirement": {
+            "field": "meta.gatherGoldCount",
+            "operator": ">=",
+            "value": 10
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 1,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "gold_seeker",
+        "title": "The Gold Seeker",
+        "requirement": {
+            "field": "meta.gatherGoldCount",
+            "operator": ">=",
+            "value": 25
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 1,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "gold_digger",
+        "title": "The Gold Digger",
+        "requirement": {
+            "field": "meta.gold",
+            "operator": ">=",
+            "value": 400
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 1,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "wanderer",
+        "title": "The Wanderer",
+        "requirement": {
+            "field": "meta.exploreCount",
+            "operator": ">=",
+            "value": 10
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 1,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "pathfinder",
+        "title": "Pathfinder",
+        "requirement": {
+            "field": "meta.exploreCount",
+            "operator": ">=",
+            "value": 30
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 1
+        }
+    },
+    {
+        "id": "bloodhound",
+        "title": "Bloodhound",
+        "requirement": {
+            "field": "meta.playerWins",
+            "operator": ">=",
+            "value": 10
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 1,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "battle_hardened",
+        "title": "Battle Hardened",
+        "requirement": {
+            "field": "meta.playerWins",
+            "operator": ">=",
+            "value": 25
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 1,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "veteran",
+        "title": "Veteran",
+        "requirement": {
+            "field": "meta.attackCount",
+            "operator": ">=",
+            "value": 40
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 1,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "unlucky",
+        "title": "The Bad Luck",
+        "requirement": {
+            "field": "meta.attackedCount",
+            "operator": ">=",
+            "value": 10
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 1
+        }
+    },
+    {
+        "id": "very_unlucky",
+        "title": "The Cursed One",
+        "requirement": {
+            "field": "meta.attackedCount",
+            "operator": ">=",
+            "value": 30
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 1
+        }
+    },
+    {
+        "id": "scarred",
+        "title": "The Scarred",
+        "requirement": {
+            "field": "meta.playerLosses",
+            "operator": ">=",
+            "value": 10
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 1
+        }
+    },
+    {
+        "id": "omen",
+        "title": "The Omen",
+        "requirement": {
+            "field": "meta.playerLosses",
+            "operator": ">=",
+            "value": 30
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 1
+        }
+    },
+    {
+        "id": "hunter",
+        "title": "The Hunter",
+        "requirement": {
+            "field": "meta.monsterKilled",
+            "operator": ">=",
+            "value": 10
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 1,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "monster_slayer",
+        "title": "The Monster Slayer",
+        "requirement": {
+            "field": "meta.monsterKilled",
+            "operator": ">=",
+            "value": 30
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 1,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "survivor",
+        "title": "The Survivor",
+        "requirement": {
+            "field": "meta.attackLoseStreak",
+            "operator": ">=",
+            "value": 5
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 0,
+            "fortune": 1
+        }
+    },
+    {
+        "id": "champion",
+        "title": "The Champion",
+        "requirement": {
+            "field": "meta.attackWinStreak",
+            "operator": ">=",
+            "value": 5
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 1,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "monster_master",
+        "title": "The Monster Master",
+        "requirement": {
+            "field": "meta.monsterEncountered",
+            "operator": ">=",
+            "value": 30
+        },
+        "bonus": {
+            "food": 1,
+            "wood": 1,
+            "gold": 1,
+            "xp": 0,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "boss_slayer",
+        "title": "The Boss Slayer",
+        "requirement": {
+            "field": "meta.bossKilled",
+            "operator": ">=",
+            "value": 3
+        },
+        "bonus": {
+            "food": 0,
+            "wood": 0,
+            "gold": 0,
+            "xp": 1,
+            "fortune": 0
+        }
+    },
+    {
+        "id": "boss_ruler",
+        "title": "The Boss Ruler",
+        "requirement": {
+            "field": "meta.bossKilled",
+            "operator": ">=",
+            "value": 10
+        },
+        "bonus": {
+            "food": 1,
+            "wood": 1,
+            "gold": 1,
+            "xp": 0,
+            "fortune": 1
+        }
+    }
+]

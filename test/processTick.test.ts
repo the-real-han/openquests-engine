@@ -817,7 +817,7 @@ describe('Explore Edge Cases', () => {
         // Player message IS updated regardless.
 
         expect(newState.clans['clanA'].food).toBe(100); // Unchanged
-        expect(newState.players['p1'].message).toContain("[+5 food]");
+        expect(newState.players['p1'].message).toContain("Your clan has fallen");
     });
 
     test('Trap Resource Loss Floor', () => {
@@ -861,4 +861,182 @@ describe('Explore Edge Cases', () => {
         expect(newState.clans['clanA'].food).toBe(100);
         expect(newState.players['p1'].message).toContain("[+2 xp]");
     });
+});
+
+describe('Title System', () => {
+
+    describe('Title Unlocking', () => {
+        test('Unlock Title on Threshold Met', () => {
+            const state = makeGameState();
+            const p1 = state.players['p1'];
+            // Req for 'forager': gatherFoodCount >= 10.
+            p1.meta.gatherFoodCount = 9;
+
+            const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
+            // Dice 10 -> Reward 10 (base).
+            const dice = createDeterministicDice([10, 0]);
+
+            const { newState } = processTick(state, actions, dice);
+            const newP1 = newState.players['p1'];
+
+            // 9 + 1 = 10. Threshold met.
+
+            expect(newP1.character.titles).toContain('forager');
+            expect(newP1.message).toContain("[TITLE UNLOCKED: The Forager]");
+        });
+
+        test('Unlock only once', () => {
+            const state = makeGameState();
+            const p1 = state.players['p1'];
+            p1.meta.gatherFoodCount = 15;
+            p1.character.titles = ['forager']; // Already unlocked
+
+            const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
+            const dice = createDeterministicDice([10, 0]);
+
+            const { newState } = processTick(state, actions, dice);
+            const newP1 = newState.players['p1'];
+
+            // Should still be just one 'forager'
+            expect(newP1.character.titles.filter(t => t === 'forager').length).toBe(1);
+            // Message should NOT contain unlock text again
+            expect(newP1.message).not.toContain("[TITLE UNLOCKED: The Forager]");
+        });
+    });
+
+    describe('Title Bonuses - Fortune', () => {
+        test('Fortune Bonus modifies Dice', () => {
+            const state = makeGameState();
+            const p1 = state.players['p1'];
+            // 'unlucky' title grants +1 Fortune.
+            p1.character.titles = ['unlucky'];
+
+            const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
+
+            // Dice: 18. +1 Fortune -> 19.
+            // Rule for 19: Reward 12.
+            // Without fortune (18): Reward 11 (Min 16).
+
+            const dice = createDeterministicDice([18, 0]);
+
+            const { newState } = processTick(state, actions, dice);
+
+            // Multiplier: 12 * 1.05 = 12.
+            // Title Bonus (food): 'unlucky' gives 0 food.
+            // Total: 12.
+
+            expect(newState.players['p1'].message).toContain("[+12 food]");
+        });
+
+        test('Fortune Clamping', () => {
+            const state = makeGameState();
+            const p1 = state.players['p1'];
+            p1.character.titles = ['unlucky']; // +1
+
+            const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
+
+            // Dice 20. +1 -> 21. Clamped to 20.
+            // Reward 12.
+
+            const dice = createDeterministicDice([20, 0]);
+            const { newState } = processTick(state, actions, dice);
+            expect(newState.players['p1'].message).toContain("[+12 food]");
+        });
+    });
+
+    describe('Title Bonuses - Resources/XP', () => {
+        test('Resource Bonus Application', () => {
+            const state = makeGameState();
+            const p1 = state.players['p1'];
+            // 'forager' -> +1 Food.
+            p1.character.titles = ['forager'];
+
+            const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
+
+            // Dice 10 -> Reward 10 (base).
+            // Multiplier 1.05 -> 10.
+            // Bonus +1 -> 11.
+
+            const dice = createDeterministicDice([10, 0]);
+            const { newState } = processTick(state, actions, dice);
+
+            expect(newState.players['p1'].message).toContain("[+11 food]");
+        });
+
+        test('XP Bonus Application', () => {
+            const state = makeGameState();
+            const p1 = state.players['p1'];
+            // 'wanderer' -> +1 XP.
+            p1.character.titles = ['wanderer'];
+
+            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+
+            // Path: XP.
+            // Dice 1: Rule Roll 10 -> Default 5 XP.
+            // Dice 2: Outcome 0 (XP).
+            // Dice 3: Msg 0.
+
+            const dice = createDeterministicDice([10, 0, 0]);
+
+            const { newState } = processTick(state, actions, dice);
+            const newP1 = newState.players['p1'];
+
+            // XP Math: 
+            // Base 5.
+            // Multiplier 1.1^1 -> 1.1. Floor(5.5) -> 5.
+            // Bonus +1.
+            // Total 6.
+
+            expect(newP1.character.xp).toBe(6);
+            expect(newP1.message).toContain("[+6 xp]");
+        });
+
+        test('Bonus Caps', () => {
+            const state = makeGameState();
+            const p1 = state.players['p1'];
+            // Stack titles to exceed cap of 3.
+            // 'forager' (+1), 'harvester' (+1), 'hoarder' (+1) -> Total 3.
+            // Need 4th. 'monster_master' (+1 food).
+
+            p1.character.titles = ['forager', 'harvester', 'hoarder', 'monster_master'];
+
+            const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
+
+            // Reward 10.
+            // Multiplier 10.
+            // Bonus 4 -> Capped at 3.
+            // Total 13.
+
+            const dice = createDeterministicDice([10, 0]);
+            const { newState } = processTick(state, actions, dice);
+
+            expect(newState.players['p1'].message).toContain("[+13 food]");
+        });
+    });
+
+    describe('Edge Cases & Integrations', () => {
+        test('Fortune in PvP', () => {
+            const state = makeGameState();
+            const p2 = makePlayer('p2', 'clanB');
+            state.players['p2'] = p2;
+            state.locations['locB'].clanId = 'clanB';
+
+            // P1 Unlucky (+1 Fortune). 
+            state.players['p1'].character.titles = ['unlucky'];
+            p2.character.titles = [];
+
+            const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'locB' }];
+
+            // Attacker Roll 10 -> 11.
+            // Defender Roll 10 -> 10.
+            // Diff 1. Win.
+
+            const dice = createDeterministicDice([0, 10, 10, 0]);
+
+            const { newState } = processTick(state, actions, dice);
+
+            expect(newState.players['p1'].meta.playerWins).toBe(1);
+        });
+    });
+
 });

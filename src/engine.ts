@@ -3,8 +3,9 @@ import { generateWorldLog } from './world_log';
 import EXPLORE_RULES from "./rules/exploring.rules.json";
 import GATHERING_RULES from "./rules/gathering.rules.json";
 import ATTACK_CLAN_RULES from "./rules/attackClan.rules.json";
-import { AttackClanResolutionRule, ExploreRuleSet, GatheringRuleSet, ResolutionRule } from './rules/types';
+import { AttackClanResolutionRule, ExploreRuleSet, GatheringRuleSet, ResolutionRule, Title } from './rules/types';
 import ATTACK_MONSTER_RULES from "./rules/attackMonster.rules.json";
+import TITLES from "./rules/title.rules.json";
 import { AttackMonsterRuleSet, AttackMonsterRule } from "./rules/types";
 
 function pushMessage(p: Player, msg: string) {
@@ -50,10 +51,11 @@ function resolveCombatRule(
 function resolveAttackClan(
     attacker: Player,
     defender: Player,
-    rollDice: DiceFn
+    attackerDice: number,
+    defenderDice: number
 ) {
-    let attackRoll = rollDice();
-    let defendRoll = rollDice();
+    let attackRoll = attackerDice;
+    let defendRoll = defenderDice;
 
     if (hasAdvantage(attacker.character.class, defender.character.class)) {
         attackRoll += ATTACK_CLAN_RULES.advantage.bonus;
@@ -106,10 +108,6 @@ function rollRandomDice(): number {
     return Math.floor(Math.random() * 20) + 1;
 }
 
-function waitMessage(): string {
-    return "You take a moment to observe. When you act again, the world will answer."
-}
-
 
 type ClanResource = "food" | "wood" | "gold";
 
@@ -134,12 +132,62 @@ function matchDice(dice: number, range?: { min?: number; max?: number }) {
     return true
 }
 
+function getFieldValue(obj: any, path: string) {
+    return path.split('.').reduce((o, k) => o?.[k], obj);
+}
+
+function compare(a: number, op: string, b: number) {
+    switch (op) {
+        case '>=': return a >= b;
+        case '>': return a > b;
+        case '==': return a === b;
+        case '<=': return a <= b;
+        case '<': return a < b;
+        default: return false;
+    }
+}
+
+function checkAndGrantTitles(player: Player, titles: Title[]) {
+    for (const t of titles) {
+        if (player.character.titles.includes(t.id)) continue;
+
+        const current = getFieldValue(player, t.requirement.field);
+
+        if (compare(current, t.requirement.operator, t.requirement.value)) {
+            player.character.titles.push(t.id);
+            pushMessage(player, `[TITLE UNLOCKED: ${t.title}]`);
+        }
+    }
+}
+
+function getTitleBonus(player: Player, bonusType: 'food' | 'wood' | 'gold' | 'xp' | 'fortune') {
+    const titleBonusTotal = player.character.titles.reduce((sum, titleId) => {
+        const t = (TITLES as Title[]).find(t => t.id === titleId);
+        return sum + (t?.bonus?.[bonusType] || 0);
+    }, 0);
+    return Math.min(3, titleBonusTotal);
+}
 
 /**
  * Pure function to process a single tick of the game world.
  * Must be deterministic and side-effect free.
  */ //
 export function processTick(initialState: GameState, actions: Action[], rollDice: DiceFn = rollRandomDice): TickResult {
+
+    const rollWithFortune = function (
+        rollDice: () => number,
+        player: Player,
+        min = 1,
+        max = 20
+    ) {
+        const base = rollDice();
+        const fortune = getTitleBonus(player, 'fortune');
+        return Math.max(min, Math.min(max, base + fortune));
+    }
+
+    function waitMessage(): string {
+        return "You take a moment to observe. When you act again, the world will answer."
+    }
     // Deep copy state to ensure immutability during processing
     const nextState = JSON.parse(JSON.stringify(initialState)) as GameState;
 
@@ -163,9 +211,9 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         }
 
         const clan = nextState.clans[player.character.clanId];
-        const diceRolled = rollDice();
+        const diceRolled = rollWithFortune(rollDice, player);
         const { reward, messages } = resolveGathering(diceRolled);
-        const finalReward = multiplyResources(reward, player);
+        const finalReward = multiplyResources(reward, player) + getTitleBonus(player, action.target as ClanResource);
 
         switch (action.target) {
             case "food":
@@ -196,7 +244,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         }
 
         const clan = nextState.clans[player.character.clanId];
-        const diceRolled = rollDice();
+        const diceRolled = rollWithFortune(rollDice, player);
         const outcomeRoll = rollDice();
         const outcome = pickWeighted((EXPLORE_RULES as ExploreRuleSet).outcomes, outcomeRoll).type;
         const ruleset = (EXPLORE_RULES as ExploreRuleSet).resolution[outcome];
@@ -206,7 +254,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
             const rule = resolveExploring(diceRolled, ruleset.rules);
 
             if (rule.xp) {
-                const xp = multiplyXp(rule.xp, player);
+                const xp = multiplyXp(rule.xp, player) + getTitleBonus(player, 'xp');
                 player.character.xp += xp;
                 pushMessage(player, `[+${xp} xp] ${rule.messages[rollDice() % rule.messages.length]}`);
                 lvUp(player);
@@ -220,16 +268,18 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
             let reward = rule.reward!;
 
             if (outcome === "xp") {
-                const xp = multiplyXp(reward, player);
+                const xp = multiplyXp(reward, player) + getTitleBonus(player, 'xp');
                 player.character.xp += xp;
                 pushMessage(player, `[+${xp} xp] ${rule.messages[rollDice() % rule.messages.length]}`);
                 lvUp(player);
             } else if (!clan.defeatedBy) {
-                reward = multiplyResources(reward, player);
+                reward = multiplyResources(reward, player) + getTitleBonus(player, outcome as ClanResource);
                 player.meta[outcome as ClanResource] += reward;
                 clan[outcome as ClanResource] += reward;
+                pushMessage(player, `[+${reward} ${outcome}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", outcome)}`);
+            } else {
+                pushMessage(player, "Your clan has fallen. The spoils of exploration cannot be brought home.");
             }
-            pushMessage(player, `[+${reward} ${outcome}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", outcome)}`);
         }
         player.meta.exploreCount++;
     }
@@ -278,7 +328,8 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         const result = resolveAttackClan(
             attacker,
             defender,
-            rollDice
+            rollWithFortune(rollDice, attacker),
+            rollWithFortune(rollDice, defender)
         );
 
         const msg =
@@ -331,7 +382,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         const player = nextState.players[action.playerId];
         if (!player) continue;
 
-        const dice = rollDice();
+        const dice = rollWithFortune(rollDice, player);
         const rule = resolveAttackMonster(dice);
 
         player.meta.monsterEncountered++;
@@ -341,7 +392,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         }
 
         let xp = rule.xp;
-        xp = multiplyXp(xp, player);
+        xp = multiplyXp(xp, player) + getTitleBonus(player, 'xp');
         player.character.xp += xp;
 
         const msg =
@@ -364,9 +415,10 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         pushMessage(player, waitMessage());
     }
 
-    // TODO
-    // Titles
-    // 
+    // Apply Titles (after all actions this tick)
+    for (const player of Object.values(nextState.players)) {
+        checkAndGrantTitles(player, TITLES as Title[]);
+    }
 
     // 3. Update World & Generate Logs
     const worldLog = generateWorldLog(nextState);
