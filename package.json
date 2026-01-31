@@ -13,7 +13,8 @@
     "build": "tsc",
     "tick": "ts-node src/index.ts",
     "prepare": "npm run build",
-    "test": "for f in test/*.ts; do echo \"Running $f...\"; ts-node $f; done"
+    "test": "for f in test/*.ts; do echo \"Running $f...\"; ts-node $f; done",
+    "test:unit": "vitest run test/processTick.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@types/node": "^20.19.30",
     "ts-node": "^10.9.1",
-    "typescript": "^5.3.2"
+    "typescript": "^5.3.2",
+    "vitest": "^4.0.18"
   }
 }

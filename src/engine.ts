@@ -75,7 +75,7 @@ function resolveAttackClan(
 }
 
 function multiplyXp(baseXp: number, player: Player) {
-    return Math.floor(baseXp * Math.sqrt(player.character.level))
+    return Math.floor(baseXp * Math.pow(1.1, player.character.level))
 }
 
 function lvUp(player: Player) {
@@ -87,6 +87,10 @@ function lvUp(player: Player) {
         player.character.xp -= requiredXp;
         player.message += ` [LEVEL UP: ${player.character.level}]`;
     }
+}
+
+function multiplyResources(baseAmount: number, player: Player) {
+    return Math.floor(baseAmount * Math.pow(1.05, player.character.level))
 }
 
 type DiceFn = () => number;
@@ -114,18 +118,6 @@ const CLASS_ADVANTAGE: Record<string, string[]> = {
 
 function hasAdvantage(attacker: string, defender: string): boolean {
     return CLASS_ADVANTAGE[attacker]?.includes(defender) ?? false;
-}
-
-function monsterAttackMessage(dice: number): string {
-    if (dice > 18)
-        return "Against impossible odds, you struck down a monstrous foe. Songs will be sung of this battle."
-    if (dice > 15)
-        return "You defeated a fearsome creature and emerged victorious."
-    if (dice < 3)
-        return "You were overwhelmed and forced to flee, shaken by the encounter."
-    if (dice < 6)
-        return "The monsters were too strong today. You escaped with your life."
-    return "You fought bravely, driving the monsters back and learning from the clash."
 }
 
 function matchDice(dice: number, range?: { min?: number; max?: number }) {
@@ -166,25 +158,26 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         const clan = nextState.clans[player.character.clanId];
         const diceRolled = rollDice();
         const { reward, messages } = resolveGathering(diceRolled);
+        const finalReward = multiplyResources(reward, player);
 
         switch (action.target) {
             case "food":
                 player.meta.gatherFoodCount++;
-                player.meta.collectedFoodCount += reward;
-                clan.defeatedBy ? null : clan.food += reward;
+                player.meta.food += finalReward;
+                clan.defeatedBy ? null : clan.food += finalReward;
                 break;
             case "wood":
                 player.meta.gatherWoodCount++;
-                player.meta.collectedWoodCount += reward;
-                clan.defeatedBy ? null : clan.wood += reward;
+                player.meta.wood += finalReward;
+                clan.defeatedBy ? null : clan.wood += finalReward;
                 break;
             case "gold":
                 player.meta.gatherGoldCount++;
-                player.meta.collectedGoldCount += reward;
-                clan.defeatedBy ? null : clan.gold += reward;
+                player.meta.gold += finalReward;
+                clan.defeatedBy ? null : clan.gold += finalReward;
                 break;
         }
-        player.message += `[+${reward} ${action.target}] ${messages[rollDice() % messages.length]}`;
+        player.message += `[+${finalReward} ${action.target}] ${messages[rollDice() % messages.length]}`;
     }
 
     for (const action of explorationActions) {
@@ -203,7 +196,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
 
         if (outcome === "trap") {
             const resource = trapLossTypes[rollDice() % trapLossTypes.length];
-            const rule = resolveExploring(diceRolled, ruleset.loss!);
+            const rule = resolveExploring(diceRolled, ruleset.rules);
 
             if (rule.xp) {
                 const xp = multiplyXp(rule.xp, player);
@@ -211,11 +204,12 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
                 player.message += `[+${xp} xp] ${rule.messages[rollDice() % rule.messages.length]}`;
                 lvUp(player);
             } else {
-                clan[resource] = Math.max(0, clan[resource] - rule.amount!);
-                player.message += `[-${rule.amount} ${resource}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", resource)}`;
+                const finalAmount = multiplyResources(rule.amount!, player);
+                clan[resource] = Math.max(0, clan[resource] - finalAmount);
+                player.message += `[-${finalAmount} ${resource}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", resource)}`;
             }
         } else {
-            const rule = resolveExploring(diceRolled, ruleset.rules!);
+            const rule = resolveExploring(diceRolled, ruleset.rules);
             let reward = rule.reward!;
 
             if (outcome === "xp") {
@@ -224,6 +218,8 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
                 player.message += `[+${xp} xp] ${rule.messages[rollDice() % rule.messages.length]}`;
                 lvUp(player);
             } else if (!clan.defeatedBy) {
+                reward = multiplyResources(reward, player);
+                player.meta[outcome as ClanResource] += reward;
                 clan[outcome as ClanResource] += reward;
             }
             player.message += `[+${reward} ${outcome}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", outcome)}`;
@@ -289,9 +285,9 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
             defender.meta.attackedCount++;
             defender.meta.playerLosses++;
 
-            let food = result.rule.foodSteal!;
+            let food = multiplyResources(result.rule.foodSteal!, attacker);
             if (defenderClan.wood > 0) {
-                const woodUsed = Math.min(defenderClan.wood, result.rule.woodShield!);
+                const woodUsed = Math.min(defenderClan.wood, multiplyResources(result.rule.woodShield!, attacker));
                 defenderClan.wood -= woodUsed;
                 food -= woodUsed;
             }
