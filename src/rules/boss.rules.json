@@ -1,0 +1,259 @@
+[
+    {
+        "id": "iron_behemoth",
+        "name": "The Iron Behemoth",
+        "locationId": "monsters_base",
+        "durationDays": 2,
+        "requirements": {
+            "minPlayers": 10,
+            "classCount": {
+                "Warrior": 10
+            }
+        },
+        "rewards": {
+            "xp": 30
+        },
+        "failureReward": {
+            "xp": 3
+        },
+        "messages": {
+            "appear": [
+                "The ground trembles as the Iron Behemoth lumbers into the Monster Base.",
+                "A towering construct of steel and rage awakens beneath the Monster Base."
+            ],
+            "success": [
+                "With brute force and unyielding courage, the Iron Behemoth is brought down.",
+                "The Behemoth collapses, its armor cracked by relentless blows."
+            ],
+            "fail": [
+                "Steel meets flesh — and the Iron Behemoth remains standing.",
+                "The Behemoth shrugs off the assault, its metal hide unbroken."
+            ]
+        }
+    },
+    {
+        "id": "crystal_serpent",
+        "name": "The Crystal Serpent",
+        "locationId": "monsters_base",
+        "durationDays": 2,
+        "requirements": {
+            "minPlayers": 15,
+            "classCount": {
+                "Lancer": 15
+            }
+        },
+        "rewards": {
+            "xp": 35
+        },
+        "failureReward": {
+            "xp": 3
+        },
+        "messages": {
+            "appear": [
+                "Shards of crystal burst from the earth as the Crystal Serpent emerges.",
+                "A gleaming serpent coils through the Monster Base, scales like glass."
+            ],
+            "success": [
+                "Perfectly timed strikes shatter the Crystal Serpent into fragments.",
+                "The Serpent splinters under disciplined formation assaults."
+            ],
+            "fail": [
+                "The Serpent darts between attacks, its crystal body unharmed.",
+                "Your formation breaks as the Serpent coils away."
+            ]
+        }
+    },
+    {
+        "id": "ashen_phoenix",
+        "name": "The Ashen Phoenix",
+        "locationId": "monsters_base",
+        "durationDays": 2,
+        "requirements": {
+            "minPlayers": 20,
+            "classCount": {
+                "Archer": 20
+            }
+        },
+        "rewards": {
+            "xp": 40
+        },
+        "failureReward": {
+            "xp": 4
+        },
+        "messages": {
+            "appear": [
+                "Flames spiral skyward as the Ashen Phoenix descends.",
+                "A burning cry echoes — the Ashen Phoenix rises from the Monster Base."
+            ],
+            "success": [
+                "A rain of arrows extinguishes the Phoenix in a storm of ash.",
+                "The Phoenix falls, flames fading into drifting embers."
+            ],
+            "fail": [
+                "The Phoenix rises again, wings ablaze.",
+                "Your arrows scorch the air, but the Phoenix endures."
+            ]
+        }
+    },
+    {
+        "id": "veil_of_whispers",
+        "name": "The Veil of Whispers",
+        "locationId": "monsters_base",
+        "durationDays": 2,
+        "requirements": {
+            "minPlayers": 5,
+            "classCount": {
+                "Monk": 5
+            }
+        },
+        "rewards": {
+            "xp": 20
+        },
+        "failureReward": {
+            "xp": 2
+        },
+        "messages": {
+            "appear": [
+                "A chilling silence spreads as unseen forces gather.",
+                "The Veil of Whispers drifts through the Monster Base, unseen but felt."
+            ],
+            "success": [
+                "Through discipline and calm, the whispers fade into nothingness.",
+                "Inner balance triumphs as the Veil dissolves."
+            ],
+            "fail": [
+                "Doubt clouds the mind — the Veil remains.",
+                "The whispers grow louder, resisting your focus."
+            ]
+        }
+    },
+    {
+        "id": "stormbound_colossus",
+        "name": "The Stormbound Colossus",
+        "locationId": "monsters_base",
+        "durationDays": 3,
+        "requirements": {
+            "minPlayers": 20,
+            "classCount": {
+                "Warrior": 8,
+                "Archer": 8
+            }
+        },
+        "rewards": {
+            "xp": 40
+        },
+        "failureReward": {
+            "xp": 4
+        },
+        "messages": {
+            "appear": [
+                "Thunder cracks as the Stormbound Colossus awakens.",
+                "Lightning dances across a massive stone figure at the Monster Base."
+            ],
+            "success": [
+                "Steel and arrows strike in harmony — the Colossus crumbles.",
+                "The storm breaks as the Colossus collapses."
+            ],
+            "fail": [
+                "The storm rages on, the Colossus unyielding.",
+                "Your attacks falter against thunder and stone."
+            ]
+        }
+    },
+    {
+        "id": "twilight_covenant",
+        "name": "The Twilight Covenant",
+        "locationId": "monsters_base",
+        "durationDays": 3,
+        "requirements": {
+            "minPlayers": 18,
+            "classCount": {
+                "Monk": 6,
+                "Archer": 6,
+                "Lancer": 6
+            }
+        },
+        "rewards": {
+            "xp": 45
+        },
+        "failureReward": {
+            "xp": 4
+        },
+        "messages": {
+            "appear": [
+                "Shadows gather — a pact of ancient beings forms.",
+                "The Twilight Covenant manifests, bound by dark ritual."
+            ],
+            "success": [
+                "Balance, precision, and unity shatter the Covenant.",
+                "The pact breaks, shadows dissolving into dusk."
+            ],
+            "fail": [
+                "The ritual holds — the Covenant remains intact.",
+                "Your assault disrupts little of their dark bond."
+            ]
+        }
+    },
+    {
+        "id": "ancient_world_eater",
+        "name": "The Ancient World Eater",
+        "locationId": "monsters_base",
+        "durationDays": 3,
+        "requirements": {
+            "minPlayers": 15,
+            "classCount": {}
+        },
+        "rewards": {
+            "xp": 35
+        },
+        "failureReward": {
+            "xp": 3
+        },
+        "messages": {
+            "appear": [
+                "The land itself recoils — the Ancient World Eater stirs.",
+                "A colossal presence threatens to devour all at the Monster Base."
+            ],
+            "success": [
+                "United across all paths, the World Eater is slain.",
+                "The beast collapses, the land finally at rest."
+            ],
+            "fail": [
+                "The World Eater roars, hunger unfulfilled.",
+                "Your combined might is still not enough."
+            ]
+        }
+    },
+    {
+        "id": "great_eagle",
+        "name": "The Great Eagle",
+        "locationId": "monsters_base",
+        "durationDays": 2,
+        "requirements": {
+            "minPlayers": 5,
+            "classCount": {
+                "Archer": 5
+            }
+        },
+        "rewards": {
+            "xp": 20
+        },
+        "failureReward": {
+            "xp": 2
+        },
+        "messages": {
+            "appear": [
+                "A massive shadow passes over the Monster Base. The Great Eagle has descended.",
+                "The skies darken as the Great Eagle claims the Monster Base as its nest."
+            ],
+            "success": [
+                "With a storm of arrows, the Great Eagle crashes to the ground.",
+                "The beast screeches one final time before falling silent."
+            ],
+            "fail": [
+                "The Great Eagle shrieks defiantly. Too few archers stood against it.",
+                "The hunters scatter as the Great Eagle dominates the battlefield."
+            ]
+        }
+    }
+]

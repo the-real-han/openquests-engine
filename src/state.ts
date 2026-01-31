@@ -118,6 +118,7 @@ function getInitialState(): GameState {
                 gold: 100,
                 defeatedBy: null
             }
-        }
+        },
+        worldEvents: []
     };
 }

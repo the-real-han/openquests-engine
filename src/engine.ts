@@ -3,9 +3,10 @@ import { generateWorldLog } from './world_log';
 import EXPLORE_RULES from "./rules/exploring.rules.json";
 import GATHERING_RULES from "./rules/gathering.rules.json";
 import ATTACK_CLAN_RULES from "./rules/attackClan.rules.json";
-import { AttackClanResolutionRule, ExploreRuleSet, GatheringRuleSet, ResolutionRule, Title } from './rules/types';
+import { AttackClanResolutionRule, Boss, ExploreRuleSet, GatheringRuleSet, ResolutionRule, Title } from './rules/types';
 import ATTACK_MONSTER_RULES from "./rules/attackMonster.rules.json";
 import TITLES from "./rules/title.rules.json";
+import BOSS_RULES from "./rules/boss.rules.json";
 import { AttackMonsterRuleSet, AttackMonsterRule } from "./rules/types";
 
 function pushMessage(p: Player, msg: string) {
@@ -167,6 +168,104 @@ function getTitleBonus(player: Player, bonusType: 'food' | 'wood' | 'gold' | 'xp
     }, 0);
     return Math.min(3, titleBonusTotal);
 }
+
+function maybeSpawnBoss(previousState: GameState, state: GameState, rollDice: DiceFn) {
+    if (previousState.activeBoss || state.activeBoss) return
+
+    if (rollDice() === 20) {
+        const boss = BOSS_RULES[rollDice() % BOSS_RULES.length] // or weighted pick later
+
+        state.activeBoss = {
+            bossId: boss.id,
+            locationId: boss.locationId,
+            appearedOn: state.day,
+            expiresOn: state.day + boss.durationDays,
+            participants: []
+        }
+
+        state.worldEvents.push({
+            id: `boss_appear_${boss.id}_${state.day}`,
+            type: "BOSS_APPEAR",
+            day: state.day,
+            locationId: boss.locationId,
+            data: { bossId: boss.id }
+        })
+    }
+}
+
+function resolveBossIfNeeded(state: GameState) {
+    const active = state.activeBoss
+    if (!active) return
+
+    const bossRule = BOSS_RULES.find(b => b.id === active.bossId)!
+    const players = active.participants.map(id => state.players[id])
+
+    const hasEnoughPlayers =
+        players.length >= bossRule.requirements.minPlayers
+
+    const hasRequiredClasses = Object.entries(
+        bossRule.requirements.classCount || {}
+    ).every(([cls, count]) =>
+        players.filter(p => p.character.class === cls).length >= count
+    )
+
+    const success = hasEnoughPlayers && hasRequiredClasses
+
+    if (success) {
+        const msg =
+            bossRule.messages.success[
+            state.day % bossRule.messages.success.length
+            ]
+
+        for (const p of players) {
+            const xp = multiplyXp(bossRule.rewards.xp, p) + getTitleBonus(p, "xp")
+            p.character.xp += xp
+            p.meta.bossKilled++;
+            p.meta.monsterEncountered++;
+            pushMessage(p, `[+${xp} xp] Defeated ${bossRule.name}.`)
+            lvUp(p)
+        }
+
+        state.worldEvents.push({
+            id: `boss_defeated_${bossRule.id}_${state.day}`,
+            type: "BOSS_DEFEATED",
+            day: state.day,
+            locationId: active.locationId,
+            data: { bossId: bossRule.id, message: msg }
+        })
+
+        state.activeBoss = null
+        return
+    }
+
+    // Not defeated yet
+    const msg =
+        bossRule.messages.fail[
+        state.day % bossRule.messages.fail.length
+        ]
+
+    for (const p of players) {
+        const xp = multiplyXp(bossRule.failureReward.xp, p) + getTitleBonus(p, "xp")
+        p.character.xp += xp
+        p.meta.monsterEncountered++;
+        pushMessage(p, `[+${xp} xp] ${bossRule.name} is no ordinary creature, try attacking with more allies.`)
+        lvUp(p)
+    }
+
+    active.participants = []
+
+    if (state.day >= active.expiresOn) {
+        state.worldEvents.push({
+            id: `boss_failed_${bossRule.id}_${state.day}`,
+            type: "BOSS_FAILED",
+            day: state.day,
+            locationId: active.locationId,
+            data: { bossId: bossRule.id, message: msg }
+        })
+        state.activeBoss = null
+    }
+}
+
 
 /**
  * Pure function to process a single tick of the game world.
@@ -382,10 +481,22 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         const player = nextState.players[action.playerId];
         if (!player) continue;
 
+        const boss = nextState.activeBoss
+        if (boss) {
+            if (!boss.participants.includes(player.playerId)) {
+                boss.participants.push(player.playerId)
+            }
+
+            pushMessage(player, "You join the hunt against a legendary foe, " + BOSS_RULES.find(b => b.id === boss.bossId)?.name)
+            continue
+        }
+
         const dice = rollWithFortune(rollDice, player);
         const rule = resolveAttackMonster(dice);
 
         player.meta.monsterEncountered++;
+
+
 
         if (rule.kill) {
             player.meta.monsterKilled++;
@@ -415,10 +526,17 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         pushMessage(player, waitMessage());
     }
 
+    // BOSS FIGHT
+    resolveBossIfNeeded(nextState);
+
+
     // Apply Titles (after all actions this tick)
     for (const player of Object.values(nextState.players)) {
         checkAndGrantTitles(player, TITLES as Title[]);
     }
+
+    //BOSS appears 
+    maybeSpawnBoss(initialState, nextState, rollDice);
 
     // 3. Update World & Generate Logs
     const worldLog = generateWorldLog(nextState);

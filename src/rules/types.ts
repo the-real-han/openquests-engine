@@ -1,3 +1,5 @@
+import { PlayerClass } from "@openquests/schema"
+
 export type DiceRange = {
     min?: number
     max?: number
@@ -74,5 +76,27 @@ export type Title = {
         gold: number,
         xp: number,
         fortune: number
+    }
+}
+
+export type Boss = {
+    id: string,
+    name: string,
+    locationId: string,
+    durationDays: number,
+    requirements: {
+        minPlayers: number,
+        classCount: Record<PlayerClass, number>
+    },
+    rewards: {
+        xp: number
+    },
+    failureReward: {
+        xp: number
+    },
+    messages: {
+        appear: string[],
+        success: string[],
+        fail: string[]
     }
 }

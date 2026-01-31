@@ -65,7 +65,8 @@ function makeGameState(): GameState {
         clans: {
             [clanA.id]: clanA,
             [clanB.id]: clanB
-        }
+        },
+        worldEvents: []
     };
 }
 
