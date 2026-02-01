@@ -61,7 +61,7 @@ export type LocationNarrationInput = {
 }
 
 
-export function generateWorldLog(state: GameState): WorldLog {
+export function buildWorldNarrationInput(state: GameState): WorldNarrationInput {
     // --- 1. Population ---
     const population = Object.values(state.players).length
 
@@ -73,10 +73,13 @@ export function generateWorldLog(state: GameState): WorldLog {
 
     for (const e of currentEvents) {
         if (e.id.startsWith("boss_")) {
+            let status = e.type.replace("BOSS_", "") as "APPEARED" | "DEFEATED" | "FAILED";
+            if (status === "APPEAR" as any) status = "APPEARED";
+
             bossEvents.push({
                 name: e.data?.bossName ?? "Boss",
                 location: e.location ?? "Unknown",
-                status: e.type.replace("BOSS_", "") as "APPEARED" | "DEFEATED" | "FAILED",
+                status,
                 message: e.data?.message ?? ""
             })
         }
@@ -92,13 +95,16 @@ export function generateWorldLog(state: GameState): WorldLog {
 
     }
 
-    // --- 5. Build AI input ---
-    const narrationInput: WorldNarrationInput = {
+    return {
         day: state.day,
         population,
         bossEvents,
         locationEvents
     }
+}
+
+export function generateWorldLog(state: GameState): WorldLog {
+    const narrationInput = buildWorldNarrationInput(state);
 
     // --- 6. Generate summary (AI later) ---
     const { summary, notes } = generateSummary(narrationInput)
@@ -106,19 +112,17 @@ export function generateWorldLog(state: GameState): WorldLog {
     // --- 7. Return WorldLog ---
     return {
         day: state.day,
-        population,
+        population: narrationInput.population,
         summary,
         notes
     }
 }
 
-export function generateLocationLog(
+export function buildLocationNarrationInput(
     previousState: GameState,
     state: GameState,
     location: LocationState
-): LocationLog {
-
-    const population = Object.values(state.players).filter(p => p.character.clanId === location.clanId).length
+): LocationNarrationInput {
     const clanId = location.clanId
     const prevClan = clanId ? previousState.clans[clanId] : null
     const currClan = clanId ? state.clans[clanId] : null
@@ -199,17 +203,26 @@ export function generateLocationLog(
         }
     }
 
-    // --- 5. Build narration input ---
-    const narrationInput: LocationNarrationInput = {
+    return {
         day: state.day,
         location: location.name,
         clan: state.clans[location.clanId]?.name,
         events
     }
+}
+
+export function generateLocationLog(
+    previousState: GameState,
+    state: GameState,
+    location: LocationState
+): LocationLog {
+    const narrationInput = buildLocationNarrationInput(previousState, state, location);
 
     // --- 6. AI narration (stubbed) ---
     const { summary, notes } =
         generateLocationSummary(narrationInput)
+
+    const population = Object.values(state.players).filter(p => p.character.clanId === location.clanId).length;
 
     return {
         day: state.day,

@@ -58,7 +58,7 @@ function makeGameState(): GameState {
     return {
         day: 1,
         locations: {
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters' }
+            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base' }
         },
         players: { [player1.github.username]: player1 },
         worldLog: { day: 0, summary: '', population: 0, notes: [] },
@@ -108,7 +108,7 @@ describe('Boss Mechanics', () => {
             const event = newState.worldEvents.find(e => e.type === 'BOSS_APPEAR');
 
             expect(event).toBeDefined();
-            expect(event?.data?.bossId).toBe(BOSS_RULES[0].id);
+            expect(event?.data?.bossName).toBe(BOSS_RULES[0].name);
         });
 
         test('Boss does not spawn if active boss exists', () => {
@@ -264,7 +264,7 @@ describe('Boss Mechanics', () => {
             // Check events
             const event = newState.worldEvents.find(e => e.type === 'BOSS_DEFEATED');
             expect(event).toBeDefined();
-            expect(event?.data?.bossId).toBe(boss.id);
+            expect(event?.data?.bossName).toBe(boss.name);
 
             // Check Rewards
             // Great Eagle Reward: 20 XP.
