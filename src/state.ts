@@ -35,31 +35,37 @@ function getInitialState(): GameState {
         locations: {
             'blue_base': {
                 id: 'blue_base',
+                name: 'Blue Base',
                 clanId: 'blue_clan',
                 description: 'The base of the Blue Whales.',
             },
             'red_base': {
                 id: 'red_base',
+                name: 'Red Base',
                 clanId: 'red_clan',
                 description: 'The base of the Red Lions.',
             },
             'purple_base': {
                 id: 'purple_base',
+                name: 'Purple Base',
                 clanId: 'purple_clan',
                 description: 'The base of the Purple Dragons.',
             },
             'yellow_base': {
                 id: 'yellow_base',
+                name: 'Yellow Base',
                 clanId: 'yellow_clan',
                 description: 'The base of the Yellow Eagles.',
             },
             'black_base': {
                 id: 'black_base',
+                name: 'Black Base',
                 clanId: 'black_clan',
                 description: 'The base of the Black Vipers.',
             },
             'monsters_base': {
                 id: 'monsters_base',
+                name: 'Monsters Base',
                 clanId: 'monsters_clan',
                 description: 'No one dares to claim this land. It breathes on its own, spawning monsters as naturally as the forest grows leaves. Those who enter do so for glory, power, or foolish pride.',
             }

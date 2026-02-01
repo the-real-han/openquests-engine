@@ -189,8 +189,8 @@ function maybeSpawnBoss(previousState: GameState, state: GameState, rollDice: Di
             id: `boss_appear_${boss.id}_${state.day}`,
             type: "BOSS_APPEAR",
             day: state.day,
-            locationId: boss.locationId,
-            data: { bossId: boss.id }
+            location: state.locations[boss.locationId].name,
+            data: { bossName: boss.name, message: boss.messages.appear[state.day % boss.messages.appear.length] }
         })
     }
 }
@@ -232,8 +232,8 @@ function resolveBossIfNeeded(state: GameState) {
             id: `boss_defeated_${bossRule.id}_${state.day}`,
             type: "BOSS_DEFEATED",
             day: state.day,
-            locationId: active.locationId,
-            data: { bossId: bossRule.id, message: msg }
+            location: state.locations[active.locationId].name,
+            data: { bossName: bossRule.name, message: msg }
         })
 
         state.activeBoss = null
@@ -261,8 +261,8 @@ function resolveBossIfNeeded(state: GameState) {
             id: `boss_failed_${bossRule.id}_${state.day}`,
             type: "BOSS_FAILED",
             day: state.day,
-            locationId: active.locationId,
-            data: { bossId: bossRule.id, message: msg }
+            location: state.locations[active.locationId].name,
+            data: { bossName: bossRule.name, message: msg }
         })
         state.activeBoss = null
     }
@@ -295,9 +295,8 @@ function maybeSpawnLocationModifiers(
             id: `locmod_${modifier.id}_${state.day}`,
             type: modifier.type,
             day: state.day,
-            locationId: modifier.locationId,
+            location: state.locations[modifier.locationId].name,
             data: {
-                modifierId: modifier.id,
                 message: modifier.messages[rollDice() % modifier.messages.length]
             }
         })
