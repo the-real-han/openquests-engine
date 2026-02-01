@@ -100,3 +100,24 @@ export type Boss = {
         fail: string[]
     }
 }
+
+export type LocationEvent = {
+    id: string
+    type: "WEATHER" | "INVASION" | "BLESSING" | "CURSE"
+    effects: {
+        explore?: number        // flat modifier
+        gather?: {
+            food?: number
+            wood?: number
+            gold?: number
+        }
+        fortune?: number        // dice modifier
+        clanResourceLossPct?: {
+            food?: number
+            wood?: number
+            gold?: number
+        }
+    }
+
+    messages: string[]
+}

@@ -1,13 +1,14 @@
-import { GameState, Action, TickResult, Player, Clan } from '@openquests/schema';
-import { generateWorldLog } from './world_log';
+import { GameState, Action, TickResult, Player, Clan, LocationModifier } from '@openquests/schema';
+import { generateLocationLog, generateWorldLog } from './story';
 import EXPLORE_RULES from "./rules/exploring.rules.json";
 import GATHERING_RULES from "./rules/gathering.rules.json";
 import ATTACK_CLAN_RULES from "./rules/attackClan.rules.json";
-import { AttackClanResolutionRule, Boss, ExploreRuleSet, GatheringRuleSet, ResolutionRule, Title } from './rules/types';
+import { AttackClanResolutionRule, Boss, ExploreRuleSet, GatheringRuleSet, LocationEvent, ResolutionRule, Title } from './rules/types';
 import ATTACK_MONSTER_RULES from "./rules/attackMonster.rules.json";
 import TITLES from "./rules/title.rules.json";
 import BOSS_RULES from "./rules/boss.rules.json";
 import { AttackMonsterRuleSet, AttackMonsterRule } from "./rules/types";
+import LOCATION_EVENTS from "./rules/locationEvent.rules.json";
 
 function pushMessage(p: Player, msg: string) {
     p.message += (p.message ? "\n" : "") + msg;
@@ -172,7 +173,8 @@ function getTitleBonus(player: Player, bonusType: 'food' | 'wood' | 'gold' | 'xp
 function maybeSpawnBoss(previousState: GameState, state: GameState, rollDice: DiceFn) {
     if (previousState.activeBoss || state.activeBoss) return
 
-    if (rollDice() === 20) {
+    // 15% chance of spawning boss
+    if (rollDice() > 17) {
         const boss = BOSS_RULES[rollDice() % BOSS_RULES.length] // or weighted pick later
 
         state.activeBoss = {
@@ -266,12 +268,59 @@ function resolveBossIfNeeded(state: GameState) {
     }
 }
 
+function maybeSpawnLocationModifiers(
+    state: GameState,
+    rollDice: DiceFn
+) {
+    const modifiers: LocationModifier[] = []
+
+    // Example: 20% chance per day
+    if (rollDice() < 4) {
+
+        const locations = Object.values(state.locations)
+        const location = locations[rollDice() % locations.length]
+        const locationEvent = LOCATION_EVENTS[rollDice() % LOCATION_EVENTS.length] as LocationEvent
+
+        modifiers.push({
+            locationId: location.id,
+            startedOn: state.day,
+            ...locationEvent
+        })
+    }
+
+    state.locationModifiers = modifiers
+    for (const modifier of modifiers) {
+        state.worldEvents.push({
+            id: `locmod_${modifier.id}_${state.day}`,
+            type: modifier.type,
+            day: state.day,
+            locationId: modifier.locationId,
+            data: {
+                modifierId: modifier.id,
+                message: modifier.messages[rollDice() % modifier.messages.length]
+            }
+        })
+    }
+}
+
+function getActiveLocationModifier(
+    state: GameState,
+    locationId?: string
+): LocationModifier | null {
+    if (!locationId || !state.locationModifiers) return null
+    return state.locationModifiers.find(m => m.locationId === locationId) ?? null
+}
+
 
 /**
  * Pure function to process a single tick of the game world.
  * Must be deterministic and side-effect free.
  */ //
 export function processTick(initialState: GameState, actions: Action[], rollDice: DiceFn = rollRandomDice): TickResult {
+
+    // Deep copy state to ensure immutability during processing
+    const nextState = JSON.parse(JSON.stringify(initialState)) as GameState;
+    nextState.day += 1;
 
     const rollWithFortune = function (
         rollDice: () => number,
@@ -281,17 +330,16 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
     ) {
         const base = rollDice();
         const fortune = getTitleBonus(player, 'fortune');
-        return Math.max(min, Math.min(max, base + fortune));
+        const location = Object.values(nextState.locations).find(l => l.clanId === player.character.clanId);
+        const locationModifier = getActiveLocationModifier(nextState, location!.id);
+        const fortuneMod = locationModifier?.effects.fortune ?? 0
+        return Math.max(min, Math.min(max, base + fortune + fortuneMod));
     }
 
     function waitMessage(): string {
         return "You take a moment to observe. When you act again, the world will answer."
     }
-    // Deep copy state to ensure immutability during processing
-    const nextState = JSON.parse(JSON.stringify(initialState)) as GameState;
 
-    // 1. Advance Day
-    nextState.day += 1;
     const uniqueActions = [...new Map(actions.map(item => [item.playerId, item])).values()];
 
     // 2. Process Actions
@@ -310,9 +358,11 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         }
 
         const clan = nextState.clans[player.character.clanId];
+        const location = Object.values(nextState.locations).find(l => l.clanId === clan.id);
+        const locationModifier = getActiveLocationModifier(nextState, location!.id);
         const diceRolled = rollWithFortune(rollDice, player);
         const { reward, messages } = resolveGathering(diceRolled);
-        const finalReward = multiplyResources(reward, player) + getTitleBonus(player, action.target as ClanResource);
+        const finalReward = multiplyResources(reward, player) + getTitleBonus(player, action.target as ClanResource) + (locationModifier?.effects?.gather?.[action.target as ClanResource] ?? 0);
 
         switch (action.target) {
             case "food":
@@ -343,7 +393,9 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         }
 
         const clan = nextState.clans[player.character.clanId];
-        const diceRolled = rollWithFortune(rollDice, player);
+        const location = Object.values(nextState.locations).find(l => l.id === action.target);
+        const locationModifier = getActiveLocationModifier(nextState, location!.id);
+        const diceRolled = rollWithFortune(rollDice, player) + (locationModifier?.effects.explore ?? 0);
         const outcomeRoll = rollDice();
         const outcome = pickWeighted((EXPLORE_RULES as ExploreRuleSet).outcomes, outcomeRoll).type;
         const ruleset = (EXPLORE_RULES as ExploreRuleSet).resolution[outcome];
@@ -491,7 +543,11 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
             continue
         }
 
-        const dice = rollWithFortune(rollDice, player);
+        const location = Object.values(nextState.locations).find(l => l.id === "monsters_base");
+        const locationModifier = getActiveLocationModifier(nextState, location!.id);
+        const fortuneMod = locationModifier?.effects.fortune ?? 0;
+
+        const dice = rollWithFortune(rollDice, player) - fortuneMod;
         const rule = resolveAttackMonster(dice);
 
         player.meta.monsterEncountered++;
@@ -526,6 +582,21 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         pushMessage(player, waitMessage());
     }
 
+    // resolve world event
+    for (const mod of nextState.locationModifiers ?? []) {
+        const clan = nextState.clans[nextState.locations[mod.locationId].clanId]
+        if (!clan || clan.defeatedBy || !mod.effects.clanResourceLossPct) continue
+
+        for (const res of ["food", "wood", "gold"] as const) {
+            const pct = mod.effects.clanResourceLossPct[res]
+            if (!pct) continue
+
+            const loss = Math.floor(clan[res] * pct)
+            clan[res] = Math.max(0, clan[res] - loss)
+        }
+    }
+
+
     // BOSS FIGHT
     resolveBossIfNeeded(nextState);
 
@@ -537,6 +608,8 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
 
     //BOSS appears 
     maybeSpawnBoss(initialState, nextState, rollDice);
+    // world events
+    maybeSpawnLocationModifiers(nextState, rollDice);
 
     // 3. Update World & Generate Logs
     const worldLog = generateWorldLog(nextState);
@@ -545,29 +618,11 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
     if (!nextState.locationLogs) nextState.locationLogs = {};
 
     for (const location of Object.values(nextState.locations)) {
-        const population = Object.values(nextState.players).filter((p: Player) =>
-            p.character.clanId === location.clanId
-        ).length;
-
-        let summary = '';
-        if (population === 0) summary = "The area is quiet and undisturbed.";
-        else if (population === 1) summary = "A lone adventurer lingers here.";
-        else if (population < 5) summary = "A small group of adventurers gather here.";
-        else summary = "The location buzzes with activity.";
-
-        // Append static flavor
-        summary += ` ${location.description}`;
-
-        nextState.locationLogs[location.id] = {
-            day: nextState.day,
-            summary: summary,
-            population: population,
-            notes: []
-        };
+        nextState.locationLogs[location.id] = generateLocationLog(initialState, nextState, location);
     }
 
     // 4. Generate Narrative
-    const narrativeSummary = `Day ${nextState.day} has ended. Travelers moved between the known locations.`;
+    const narrativeSummary = `Day ${nextState.day} has ended.`;
 
     return {
         newState: nextState,

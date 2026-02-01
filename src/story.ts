@@ -1,4 +1,4 @@
-import { GameState, WorldLog } from '@openquests/schema';
+import { GameState, LocationLog, LocationState, Player, WorldLog } from '@openquests/schema';
 
 export function generateWorldLog(state: GameState): WorldLog {
     let log = '';
@@ -41,6 +41,27 @@ export function generateWorldLog(state: GameState): WorldLog {
         day: state.day,
         summary: log.trim(),
         population: totalPopulation,
+        notes: []
+    };
+}
+
+export function generateLocationLog(previousState: GameState, state: GameState, location: LocationState): LocationLog {
+    const population = Object.values(state.players).filter((p: Player) =>
+        p.character.clanId === location.clanId
+    ).length;
+
+    let summary = '';
+    if (population === 0) summary = "The area is quiet and undisturbed.";
+    else if (population === 1) summary = "A lone adventurer lingers here.";
+    else if (population < 5) summary = "A small group of adventurers gather here.";
+    else summary = "The location buzzes with activity.";
+
+    // Append static flavor
+    summary += ` ${location.description}`;
+    return {
+        day: state.day,
+        summary: summary,
+        population: population,
         notes: []
     };
 }

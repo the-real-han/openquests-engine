@@ -1,0 +1,116 @@
+[
+    {
+        "id": "weather_heavy_rain",
+        "type": "WEATHER",
+        "effects": {
+            "explore": -1,
+            "fortune": -1
+        },
+        "messages": [
+            "Relentless rain soaks the land, slowing travel and dulling spirits.",
+            "Dark clouds burst overhead, turning paths into rivers of mud.",
+            "The weather turns foul, and even veterans struggle to make progress."
+        ]
+    },
+    {
+        "id": "weather_clear_skies",
+        "type": "WEATHER",
+        "effects": {
+            "explore": 1,
+            "fortune": 1
+        },
+        "messages": [
+            "Clear skies stretch endlessly above, filling adventurers with confidence.",
+            "The sun shines brightly, making travel swift and decisions sure.",
+            "A perfect day—every step feels guided by fortune."
+        ]
+    },
+    {
+        "id": "invasion_goblin_raid",
+        "type": "INVASION",
+        "effects": {
+            "fortune": -1,
+            "clanResourceLossPct": {
+                "food": 0.1,
+                "wood": 0.05
+            }
+        },
+        "messages": [
+            "Goblin raiders strike at dawn, stealing supplies before fading into the hills.",
+            "Crude war cries echo as goblins loot the outskirts of the clan.",
+            "By the time guards rally, the goblins are gone—along with vital resources."
+        ]
+    },
+    {
+        "id": "invasion_undead_surge",
+        "type": "INVASION",
+        "effects": {
+            "fortune": -2,
+            "clanResourceLossPct": {
+                "food": 0.15,
+                "gold": 0.05
+            }
+        },
+        "messages": [
+            "The dead rise in silence, draining life and hope from the living.",
+            "An unnatural chill spreads as undead overrun storehouses and vaults.",
+            "Torches flicker as the restless dead claim their grim tribute."
+        ]
+    },
+    {
+        "id": "blessing_harvest_festival",
+        "type": "BLESSING",
+        "effects": {
+            "gather": {
+                "food": 2
+            },
+            "fortune": 1
+        },
+        "messages": [
+            "A joyous harvest festival fills granaries and lifts weary hearts.",
+            "The land yields generously, as if blessed by unseen hands.",
+            "Songs and laughter accompany baskets overflowing with food."
+        ]
+    },
+    {
+        "id": "blessing_forest_bounty",
+        "type": "BLESSING",
+        "effects": {
+            "gather": {
+                "wood": 2
+            }
+        },
+        "messages": [
+            "The forest offers its bounty freely, trees falling clean and true.",
+            "Axes strike deep as the woods seem eager to provide.",
+            "Timber is gathered with ease, as if nature itself assists."
+        ]
+    },
+    {
+        "id": "curse_famine",
+        "type": "CURSE",
+        "effects": {
+            "gather": {
+                "food": -2
+            },
+            "fortune": -1
+        },
+        "messages": [
+            "Crops fail and hunger spreads quietly through the clan.",
+            "An unseen blight leaves fields barren and spirits shaken.",
+            "Food grows scarce, and whispers of a curse fill the air."
+        ]
+    },
+    {
+        "id": "curse_misfortune",
+        "type": "CURSE",
+        "effects": {
+            "fortune": -2
+        },
+        "messages": [
+            "Luck twists cruelly, and every encounter feels stacked against you.",
+            "Fate turns hostile, as if the world itself resists your actions.",
+            "Even the smallest risks seem to spiral into disaster."
+        ]
+    }
+]

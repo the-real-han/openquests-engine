@@ -6,7 +6,7 @@ import { Action, Clan, Player } from '@openquests/schema';
 import { GameInputs, MockAdapter, GitHubAdapter } from './github_adapter';
 import { parseAction } from './actions';
 import { parseIssueBody } from './parser';
-import { generateWorldLog } from './world_log';
+import { generateWorldLog } from './story';
 
 export async function runTick() {
     try {
