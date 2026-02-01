@@ -3,8 +3,7 @@
         "id": "weather_heavy_rain",
         "type": "WEATHER",
         "effects": {
-            "explore": -1,
-            "fortune": -1
+            "explore": -2
         },
         "messages": [
             "Relentless rain soaks the land, slowing travel and dulling spirits.",
@@ -16,8 +15,7 @@
         "id": "weather_clear_skies",
         "type": "WEATHER",
         "effects": {
-            "explore": 1,
-            "fortune": 1
+            "explore": 2
         },
         "messages": [
             "Clear skies stretch endlessly above, filling adventurers with confidence.",
@@ -29,10 +27,9 @@
         "id": "invasion_goblin_raid",
         "type": "INVASION",
         "effects": {
-            "fortune": -1,
             "clanResourceLossPct": {
-                "food": 0.1,
-                "wood": 0.05
+                "gold": 0.1,
+                "wood": 0.1
             }
         },
         "messages": [
@@ -45,10 +42,9 @@
         "id": "invasion_undead_surge",
         "type": "INVASION",
         "effects": {
-            "fortune": -2,
             "clanResourceLossPct": {
-                "food": 0.15,
-                "gold": 0.05
+                "food": 0.05,
+                "gold": 0.15
             }
         },
         "messages": [
@@ -63,8 +59,7 @@
         "effects": {
             "gather": {
                 "food": 2
-            },
-            "fortune": 1
+            }
         },
         "messages": [
             "A joyous harvest festival fills granaries and lifts weary hearts.",
@@ -87,13 +82,54 @@
         ]
     },
     {
+        "id": "blessing_gold_bounty",
+        "type": "BLESSING",
+        "effects": {
+            "gather": {
+                "gold": 2
+            }
+        },
+        "messages": [
+            "The mine offers its bounty freely, ore falling clean and true.",
+            "Pickaxes strike deep as the mines seem eager to provide.",
+            "Gold is gathered with ease, as if nature itself rewards your efforts."
+        ]
+    },
+    {
+        "id": "curse_forest_bounty",
+        "type": "CURSE",
+        "effects": {
+            "gather": {
+                "wood": -2
+            }
+        },
+        "messages": [
+            "Monsters are rampant in the forest, making it unsafe to gather wood.",
+            "The woods are thick and dark, making it difficult to see.",
+            "The laborious work of gathering wood is hardly rewarded."
+        ]
+    },
+    {
+        "id": "curse_gold_bounty",
+        "type": "CURSE",
+        "effects": {
+            "gather": {
+                "gold": -2
+            }
+        },
+        "messages": [
+            "The mine is ransacked, gold is nowhere to be found.",
+            "Day is hot, and hands are tired, not a good day for mining.",
+            "The laborious work of mining is hardly rewarded."
+        ]
+    },
+    {
         "id": "curse_famine",
         "type": "CURSE",
         "effects": {
             "gather": {
                 "food": -2
-            },
-            "fortune": -1
+            }
         },
         "messages": [
             "Crops fail and hunger spreads quietly through the clan.",
@@ -111,6 +147,18 @@
             "Luck twists cruelly, and every encounter feels stacked against you.",
             "Fate turns hostile, as if the world itself resists your actions.",
             "Even the smallest risks seem to spiral into disaster."
+        ]
+    },
+    {
+        "id": "blessing_fortune",
+        "type": "BLESSING",
+        "effects": {
+            "fortune": 2
+        },
+        "messages": [
+            "Luck twists generously, and every encounter feels stacked in your favor.",
+            "Fate is in your favor, as if the world itself supports your actions.",
+            "Even the smallest chances seem to spiral into success."
         ]
     }
 ]

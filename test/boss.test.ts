@@ -132,9 +132,9 @@ describe('Boss Mechanics', () => {
             expect(validEvents.length).toBe(0);
         });
 
-        test('Boss does not spawn if roll is not 20', () => {
+        test('Boss does not spawn if roll is not > 17', () => {
             const state = makeGameState();
-            const dice = createDeterministicDice([19]); // Not 20
+            const dice = createDeterministicDice([10]); // Not > 17
 
             const { newState } = processTick(state, [], dice);
             expect(newState.activeBoss).toBeNull();

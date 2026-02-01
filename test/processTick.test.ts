@@ -57,7 +57,8 @@ function makeGameState(): GameState {
         day: 1,
         locations: {
             'locA': { id: 'locA', description: 'Desc A', clanId: 'clanA' },
-            'locB': { id: 'locB', description: 'Desc B', clanId: 'clanB' }
+            'locB': { id: 'locB', description: 'Desc B', clanId: 'clanB' },
+            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters' }
         },
         players: { [player1.github.username]: player1 },
         worldLog: { day: 0, summary: '', population: 0, notes: [] },
@@ -192,7 +193,7 @@ describe('processTick', () => {
 
         test('Explore XP Branch', () => {
             const state = makeGameState();
-            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
             // Dice sequence:
             // 1. rollDice() inside loop (unused for outcome selection directly, but passed to resolveExploring) -> let's say 10 (reward 5 from defaults)
@@ -230,7 +231,7 @@ describe('processTick', () => {
 
         test('Explore Resource Branch (Food)', () => {
             const state = makeGameState();
-            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
             // Dice:
             // 1. Rule roll: 20 -> Reward 9 ( > 18)
@@ -252,7 +253,7 @@ describe('processTick', () => {
 
         test('Explore Trap Branch', () => {
             const state = makeGameState();
-            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
             // Dice:
             // 1. Rule roll: 5 (max 5 -> amount 10)
@@ -284,7 +285,7 @@ describe('processTick', () => {
 
         test('Explore Trap XP Gain', () => {
             const state = makeGameState();
-            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
             const dice = createDeterministicDice([
                 20, // Rule roll ( > 18 -> xp 2)
@@ -802,7 +803,7 @@ describe('Explore Edge Cases', () => {
         const state = makeGameState();
         state.clans['clanA'].defeatedBy = 'clanB';
 
-        const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+        const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
         // Path: Resource (Food).
         // Dice:
@@ -826,7 +827,7 @@ describe('Explore Edge Cases', () => {
         // Low resources
         state.clans['clanA'].food = 5;
 
-        const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+        const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
         // Path: Trap -> Loss.
         // Dice:
@@ -846,7 +847,7 @@ describe('Explore Edge Cases', () => {
     test('Trap XP Safety', () => {
         const state = makeGameState();
 
-        const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+        const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
         // Path: Trap -> XP.
         // Dice:
@@ -970,7 +971,7 @@ describe('Title System', () => {
             // 'wanderer' -> +1 XP.
             p1.character.titles = ['wanderer'];
 
-            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE' }];
+            const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
             // Path: XP.
             // Dice 1: Rule Roll 10 -> Default 5 XP.

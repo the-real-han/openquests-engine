@@ -1,4 +1,4 @@
-import { GameState, Action, TickResult, Player, Clan, LocationModifier } from '@openquests/schema';
+import { GameState, Action, TickResult, Player, Clan, LocationModifier, LocationState } from '@openquests/schema';
 import { generateLocationLog, generateWorldLog } from './story';
 import EXPLORE_RULES from "./rules/exploring.rules.json";
 import GATHERING_RULES from "./rules/gathering.rules.json";
@@ -278,14 +278,15 @@ function maybeSpawnLocationModifiers(
     if (rollDice() < 4) {
 
         const locations = Object.values(state.locations)
-        const location = locations[rollDice() % locations.length]
-        const locationEvent = LOCATION_EVENTS[rollDice() % LOCATION_EVENTS.length] as LocationEvent
-
-        modifiers.push({
-            locationId: location.id,
-            startedOn: state.day,
-            ...locationEvent
-        })
+        const location = locations[Math.abs(rollDice()) % locations.length]
+        const locationEvent = LOCATION_EVENTS[Math.abs(rollDice()) % LOCATION_EVENTS.length] as LocationEvent
+        if (!(location.id === "monsters_base" && locationEvent.type !== "WEATHER")) {
+            modifiers.push({
+                locationId: location.id,
+                startedOn: state.day,
+                ...locationEvent
+            })
+        }
     }
 
     state.locationModifiers = modifiers
@@ -305,10 +306,10 @@ function maybeSpawnLocationModifiers(
 
 function getActiveLocationModifier(
     state: GameState,
-    locationId?: string
+    location?: LocationState
 ): LocationModifier | null {
-    if (!locationId || !state.locationModifiers) return null
-    return state.locationModifiers.find(m => m.locationId === locationId) ?? null
+    if (!location || !state.locationModifiers) return null
+    return state.locationModifiers.find(m => m.locationId === location.id) ?? null
 }
 
 
@@ -325,14 +326,15 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
     const rollWithFortune = function (
         rollDice: () => number,
         player: Player,
+        ignoreLocation = false,
         min = 1,
         max = 20
     ) {
         const base = rollDice();
         const fortune = getTitleBonus(player, 'fortune');
         const location = Object.values(nextState.locations).find(l => l.clanId === player.character.clanId);
-        const locationModifier = getActiveLocationModifier(nextState, location!.id);
-        const fortuneMod = locationModifier?.effects.fortune ?? 0
+        const locationModifier = getActiveLocationModifier(nextState, location);
+        const fortuneMod = ignoreLocation ? 0 : (locationModifier?.effects.fortune ?? 0)
         return Math.max(min, Math.min(max, base + fortune + fortuneMod));
     }
 
@@ -359,7 +361,7 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
 
         const clan = nextState.clans[player.character.clanId];
         const location = Object.values(nextState.locations).find(l => l.clanId === clan.id);
-        const locationModifier = getActiveLocationModifier(nextState, location!.id);
+        const locationModifier = getActiveLocationModifier(nextState, location);
         const diceRolled = rollWithFortune(rollDice, player);
         const { reward, messages } = resolveGathering(diceRolled);
         const finalReward = multiplyResources(reward, player) + getTitleBonus(player, action.target as ClanResource) + (locationModifier?.effects?.gather?.[action.target as ClanResource] ?? 0);
@@ -393,9 +395,9 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         }
 
         const clan = nextState.clans[player.character.clanId];
-        const location = Object.values(nextState.locations).find(l => l.id === action.target);
-        const locationModifier = getActiveLocationModifier(nextState, location!.id);
-        const diceRolled = rollWithFortune(rollDice, player) + (locationModifier?.effects.explore ?? 0);
+        const targetLocation = Object.values(nextState.locations).find(l => l.id === action.target);
+        const targetModifier = getActiveLocationModifier(nextState, targetLocation);
+        const diceRolled = rollWithFortune(rollDice, player, true) + (targetModifier?.effects.explore ?? 0);
         const outcomeRoll = rollDice();
         const outcome = pickWeighted((EXPLORE_RULES as ExploreRuleSet).outcomes, outcomeRoll).type;
         const ruleset = (EXPLORE_RULES as ExploreRuleSet).resolution[outcome];
@@ -544,10 +546,10 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
         }
 
         const location = Object.values(nextState.locations).find(l => l.id === "monsters_base");
-        const locationModifier = getActiveLocationModifier(nextState, location!.id);
-        const fortuneMod = locationModifier?.effects.fortune ?? 0;
+        const locationModifier = getActiveLocationModifier(nextState, location);
+        const monsterFortunePenalty = locationModifier?.effects.fortune ?? 0;
 
-        const dice = rollWithFortune(rollDice, player) - fortuneMod;
+        const dice = rollWithFortune(rollDice, player) - monsterFortunePenalty;
         const rule = resolveAttackMonster(dice);
 
         player.meta.monsterEncountered++;
