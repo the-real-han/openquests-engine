@@ -35,39 +35,39 @@ function getInitialState(): GameState {
         locations: {
             'blue_base': {
                 id: 'blue_base',
-                name: 'Blue Base',
+                name: 'Pinewood Grove',
                 clanId: 'blue_clan',
-                description: 'The base of the Blue Whales.',
+                description: 'The base of the Timberkeep.',
             },
             'red_base': {
                 id: 'red_base',
-                name: 'Red Base',
+                name: 'Goldforge Mine',
                 clanId: 'red_clan',
-                description: 'The base of the Red Lions.',
+                description: 'The base of the Emberwatch.',
             },
             'purple_base': {
                 id: 'purple_base',
-                name: 'Purple Base',
+                name: 'Harmony Fields',
                 clanId: 'purple_clan',
-                description: 'The base of the Purple Dragons.',
+                description: 'The base of the Prismveil.',
             },
             'yellow_base': {
                 id: 'yellow_base',
-                name: 'Yellow Base',
+                name: 'Golden Plains',
                 clanId: 'yellow_clan',
-                description: 'The base of the Yellow Eagles.',
+                description: 'The base of the Sunherd.',
             },
             'black_base': {
                 id: 'black_base',
-                name: 'Black Base',
+                name: 'Twilight Pits',
                 clanId: 'black_clan',
-                description: 'The base of the Black Vipers.',
+                description: 'The base of the Shardveil.',
             },
             'monsters_base': {
                 id: 'monsters_base',
-                name: 'Monsters Base',
+                name: 'The Wildrift',
                 clanId: 'monsters_clan',
-                description: 'No one dares to claim this land. It breathes on its own, spawning monsters as naturally as the forest grows leaves. Those who enter do so for glory, power, or foolish pride.',
+                description: 'A rugged no-man’s land crawling with wild beasts and old ruins. Once fertile, now overrun, the Wildrift tempts adventurers with hidden loot and danger alike.',
             }
         },
         players: {},
@@ -81,47 +81,63 @@ function getInitialState(): GameState {
         clans: {
             'blue': {
                 id: 'blue_clan',
-                name: 'The Blue Whales',
-                description: 'We tread the world and endure storms not by rage, but by patience and depth.',
+                name: 'The Timberkeep',
+                description: 'Timberkeep’s people dwell in forest clearings surrounded by towering pines. They’re builders and wardens—steady as the trunks that shield their homes.',
                 wood: 100,
                 food: 100,
                 gold: 100,
-                defeatedBy: null
+                defeatedBy: null,
+                bonus: {
+                    wood: 15
+                }
             },
             'red': {
                 id: 'red_clan',
-                name: 'The Red Lions',
-                description: 'We are the roar before the clash. Our banners move where blood is spilled, and our courage feeds on conflict.',
+                name: 'The Emberwatch',
+                description: 'The miners and smiths of Emberwatch live among glowing forges and dusty tunnels rich with gold. They trade sweat for fortune and see progress in every swing of their hammers.',
                 wood: 100,
                 food: 100,
                 gold: 100,
+                bonus: {
+                    gold: 15
+                },
                 defeatedBy: null
             },
             'purple': {
                 id: 'purple_clan',
-                name: 'The Purple Dragons',
-                description: 'We walk between myth and fire. Power is not taken — it is awakened.',
+                name: 'The Prismveil',
+                description: 'A gathering of traders and travelers who value balance over greed. Prismveil’s lands hold a little of everything—trees, farms, and gold for trade or craft.',
                 wood: 100,
                 food: 100,
                 gold: 100,
+                bonus: {
+                    wood: 5,
+                    food: 5,
+                    gold: 5
+                },
                 defeatedBy: null
             },
             'yellow': {
                 id: 'yellow_clan',
-                name: 'The Yellow Eagles',
-                description: 'From the highest skies, we watch and wait. When we strike, it is swift, precise, and already decided.',
+                name: 'The Sunherd',
+                description: 'Peaceful and hearty, the Sunherd clan tends vast grazing fields where flocks roam freely. Food means life to them, and their bounty feeds all who stand beside them.',
                 wood: 100,
                 food: 100,
                 gold: 100,
+                bonus: {
+                    food: 15
+                },
                 defeatedBy: null
             },
             'black': {
                 id: 'black_clan',
-                name: 'The Black Vipers',
-                description: 'We do not announce our presence. By the time our enemies feel the venom, it is already too late.',
+                name: 'The Shardveil',
+                description: 'A clan of wanderers drawn to fortune and mystery. Each sunrise brings them a different bounty—some days gold, others wood or food. Chaos is their ally.',
                 wood: 100,
                 food: 100,
                 gold: 100,
+                bonus: {
+                },
                 defeatedBy: null
             }
         },

@@ -311,6 +311,9 @@ function getActiveLocationModifier(
     return state.locationModifiers.find(m => m.locationId === location.id) ?? null
 }
 
+function waitMessage(): string {
+    return "You take a moment to observe. When you act again, the world will answer."
+}
 
 /**
  * Pure function to process a single tick of the game world.
@@ -337,11 +340,22 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         return Math.max(min, Math.min(max, base + fortune + fortuneMod));
     }
 
-    function waitMessage(): string {
-        return "You take a moment to observe. When you act again, the world will answer."
-    }
-
     const uniqueActions = [...new Map(actions.map(item => [item.playerId, item])).values()];
+
+    // process clan daily bonus
+    for (const clan of Object.values(nextState.clans)) {
+        if (clan.bonus.wood === undefined && clan.bonus.food === undefined && clan.bonus.gold === undefined) {
+            // black clan, random bonus
+            const res = ["food", "wood", "gold"][rollDice() % 3]
+            clan[res as ClanResource] += 15
+            continue
+        }
+        for (const res of ["food", "wood", "gold"] as const) {
+            const bonus = clan.bonus[res]
+            if (bonus === undefined) continue
+            clan[res] += bonus
+        }
+    }
 
     // 2. Process Actions
     const gatheringActions: Action[] = uniqueActions.filter(action => action.type === 'GATHER');

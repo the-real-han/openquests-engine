@@ -33,7 +33,8 @@ function makeClan(id: string, name: string): Clan {
         wood: 100,
         food: 100,
         gold: 100,
-        defeatedBy: null
+        defeatedBy: null,
+        bonus: { food: 0, wood: 0, gold: 0 }
     };
 }
 
@@ -1055,6 +1056,44 @@ describe('Title System', () => {
             const { newState } = await processTick(state, actions, dice);
 
             expect(newState.players['p1'].meta.playerWins).toBe(1);
+        });
+    });
+
+    describe('Clan Daily Bonuses', () => {
+        test('Applies specific bonuses to clan resources', async () => {
+            const state = makeGameState();
+            state.clans['clanA'].bonus = { food: 5, wood: 10, gold: 15 };
+
+            const { newState } = await processTick(state, []);
+
+            expect(newState.clans['clanA'].food).toBe(105); // 100 + 5
+            expect(newState.clans['clanA'].wood).toBe(110); // 100 + 10
+            expect(newState.clans['clanA'].gold).toBe(115); // 100 + 15
+        });
+
+        test('Applies random +15 bonus if all bonuses are 0/undefined (Shardveil style)', async () => {
+            const state = makeGameState();
+            // bonus: { food: 0, wood: 0, gold: 0 } is the new default from makeClan update
+            // the code checks !clan.bonus.wood && !clan.bonus.food && !clan.bonus.gold
+            state.clans['clanA'].bonus = {};
+
+            const dice = createDeterministicDice([0]); // 0 % 3 = 0 (food)
+            const { newState } = await processTick(state, [], dice);
+
+            expect(newState.clans['clanA'].food).toBe(115); // 100 + 15
+            expect(newState.clans['clanA'].wood).toBe(100);
+            expect(newState.clans['clanA'].gold).toBe(100);
+        });
+
+        test('Supports partial bonuses', async () => {
+            const state = makeGameState();
+            state.clans['clanA'].bonus = { food: 20 }; // wood/gold undefined
+
+            const { newState } = await processTick(state, []);
+
+            expect(newState.clans['clanA'].food).toBe(120);
+            expect(newState.clans['clanA'].wood).toBe(100);
+            expect(newState.clans['clanA'].gold).toBe(100);
         });
     });
 

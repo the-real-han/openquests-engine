@@ -1,15 +1,20 @@
 import { GameState, LocationLog, LocationModifier, LocationState, Player, WorldLog } from '@openquests/schema';
 import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const apiKey = process.env.GEMINI_API_KEY;
+
+const genAI = apiKey ? new GoogleGenAI({ apiKey: apiKey }) : null;
 
 export async function generateWorldSummary(
     input: WorldNarrationInput
 ): Promise<string> {
+    if (!genAI) {
+        return "Unable to generate world summary";
+    }
 
     const prompt = buildWorldPrompt(input);
     const response = await genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: prompt,
     });
 
@@ -21,10 +26,14 @@ export async function generateWorldSummary(
 export async function generateLocationSummary(
     input: LocationNarrationInput
 ): Promise<string> {
+    if (!genAI) {
+        return "Unable to generate location summary";
+    }
+
     const prompt = buildLocationPrompt(input);
 
     const result = await genAI.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: prompt,
     });
 

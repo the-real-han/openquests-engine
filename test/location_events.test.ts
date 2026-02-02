@@ -24,7 +24,8 @@ function makeClan(id: string, name: string): Clan {
         wood: 100,
         food: 100,
         gold: 100,
-        defeatedBy: null
+        defeatedBy: null,
+        bonus: { food: 0, wood: 0, gold: 0 }
     };
 }
 

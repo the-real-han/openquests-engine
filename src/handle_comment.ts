@@ -1,7 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { loadState } from './state';
-import { generateLookResponse } from './queries/look';
 
 export async function handleComment() {
     try {
@@ -52,7 +51,7 @@ export async function handleComment() {
 
         // 3. Generate Response
         // We use issueNumber as the playerId, consistent with our schema
-        const response = generateLookResponse(gameState, issueNumber.toString());
+        //const response = generateLookResponse(gameState, issueNumber.toString());
 
         // 4. Post Reply
         const token = process.env.GITHUB_TOKEN;
@@ -65,7 +64,7 @@ export async function handleComment() {
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: issueNumber,
-            body: response
+            body: ""
         });
 
         console.log('Reply posted.');
