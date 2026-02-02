@@ -1,7 +1,27 @@
 
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { processTick } from '../src/engine';
 import { GameState, Player, Clan, Action, PlayerClass } from '@openquests/schema';
+
+// Mock AI generation to avoid API calls
+vi.mock('../src/story', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../src/story')>();
+    return {
+        ...actual,
+        generateWorldLog: vi.fn().mockImplementation(async (state) => ({
+            day: state.day,
+            summary: "Mock World",
+            notes: [],
+            population: Object.keys(state.players).length
+        })),
+        generateLocationLog: vi.fn().mockImplementation(async (prev, state, loc) => ({
+            day: state.day,
+            summary: "Mock Loc",
+            notes: [],
+            population: Object.values(state.players).filter((p: any) => p.character.clanId === loc.clanId).length
+        }))
+    };
+});
 
 // --- Fixtures ---
 
@@ -85,13 +105,13 @@ function createDeterministicDice(rolls: number[]) {
 describe('processTick', () => {
 
     describe('General', () => {
-        test('Day increments by 1', () => {
+        test('Day increments by 1', async () => {
             const state = makeGameState();
-            const { newState } = processTick(state, [], createDeterministicDice([]));
+            const { newState } = await processTick(state, [], createDeterministicDice([]));
             expect(newState.day).toBe(state.day + 1);
         });
 
-        test('Only one action per player per tick', () => {
+        test('Only one action per player per tick', async () => {
             const state = makeGameState();
             // Two gather actions for p1
             const actions: Action[] = [
@@ -101,7 +121,7 @@ describe('processTick', () => {
             // Roll 10 (normal reward 10) for gather, 1 for message
             const dice = createDeterministicDice([10, 1]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const p1 = newState.players['p1'];
 
             // Check last action wins (Map behavior keeps last set value for key)
@@ -109,18 +129,18 @@ describe('processTick', () => {
             expect(p1.meta.gatherWoodCount).toBe(1);
         });
 
-        test('Unknown player actions are ignored', () => {
+        test('Unknown player actions are ignored', async () => {
             const state = makeGameState();
             const actions: Action[] = [{ playerId: 'unknown', type: 'WAIT' }];
             // Should not throw or crash
-            const { newState } = processTick(state, actions);
+            const { newState } = await processTick(state, actions);
             expect(newState).toBeDefined();
         });
 
-        test('WAIT action produces message', () => {
+        test('WAIT action produces message', async () => {
             const state = makeGameState();
             const actions: Action[] = [{ playerId: 'p1', type: 'WAIT' }];
-            const { newState } = processTick(state, actions);
+            const { newState } = await processTick(state, actions);
             expect(newState.players['p1'].message).toContain("take a moment to observe");
         });
     });
@@ -139,7 +159,7 @@ describe('processTick', () => {
             { roll: 10, expectedReward: 10, target: 'gold' },
             { roll: 5, expectedReward: 9, target: 'food' },
             { roll: 1, expectedReward: 8, target: 'wood' },
-        ])('Gather $target with roll $roll yields $expectedReward', ({ roll, expectedReward, target }) => {
+        ])('Gather $target with roll $roll yields $expectedReward', async ({ roll, expectedReward, target }) => {
             const state = makeGameState();
             const player = state.players['p1'];
             const clan = state.clans[player.character.clanId];
@@ -149,7 +169,7 @@ describe('processTick', () => {
             // Roll for reward, then roll for message index (use 0)
             const dice = createDeterministicDice([roll, 0]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const newPlayer = newState.players['p1'];
             const newClan = newState.clans[player.character.clanId];
 
@@ -164,7 +184,7 @@ describe('processTick', () => {
             if (target === 'gold') expect(newPlayer.meta.gatherGoldCount).toBe(1);
         });
 
-        test('No clan resource gain if defeated', () => {
+        test('No clan resource gain if defeated', async () => {
             const state = makeGameState();
             state.clans['clanA'].defeatedBy = 'clanB';
 
@@ -172,7 +192,7 @@ describe('processTick', () => {
             // Roll 10 -> reward 10
             const dice = createDeterministicDice([10, 0]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             // Player gets meta count (multiplied)
             // Reward 10 * 1.05 = 10.5 -> 10.
             expect(newState.players['p1'].meta.food).toBe(10);
@@ -191,7 +211,7 @@ describe('processTick', () => {
         // 6,7 -> Outcome 3 (gold)
         // 8,9 -> Outcome 4 (trap)
 
-        test('Explore XP Branch', () => {
+        test('Explore XP Branch', async () => {
             const state = makeGameState();
             const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
@@ -220,7 +240,7 @@ describe('processTick', () => {
                 0   // message roll
             ]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const p = newState.players['p1'];
 
             // Base XP 5, multiplier 1.1^1 = 1.1. Floor(5 * 1.1) = 5.
@@ -229,7 +249,7 @@ describe('processTick', () => {
             expect(p.meta.exploreCount).toBe(1);
         });
 
-        test('Explore Resource Branch (Food)', () => {
+        test('Explore Resource Branch (Food)', async () => {
             const state = makeGameState();
             const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
@@ -239,7 +259,7 @@ describe('processTick', () => {
             // 3. Message roll: 0
 
             const dice = createDeterministicDice([20, 4, 0]);
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
 
             const clan = newState.clans['clanA'];
             // Reward 9 * 1.05 = 9.45 -> 9.
@@ -251,7 +271,7 @@ describe('processTick', () => {
             expect(newState.players['p1'].message).toContain("[+9 food]");
         });
 
-        test('Explore Trap Branch', () => {
+        test('Explore Trap Branch', async () => {
             const state = makeGameState();
             const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
@@ -275,7 +295,7 @@ describe('processTick', () => {
                 0  // Message roll
             ]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const clan = newState.clans['clanA'];
 
             // Lost 10 food -> Multiplier 1.05 -> 10.
@@ -283,7 +303,7 @@ describe('processTick', () => {
             expect(newState.players['p1'].message).toContain("[-10 food]");
         });
 
-        test('Explore Trap XP Gain', () => {
+        test('Explore Trap XP Gain', async () => {
             const state = makeGameState();
             const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
@@ -294,7 +314,7 @@ describe('processTick', () => {
                 0   // Message roll
             ]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const p = newState.players['p1'];
 
             // Base 2 xp * 1.1 = 2.2 -> 2
@@ -313,26 +333,26 @@ describe('processTick', () => {
             return state;
         }
 
-        test('Self attack handled', () => {
+        test('Self attack handled', async () => {
             const state = setupWarState();
             // p1 (clanA) attacks locA (clanA)
             const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'locA' }];
 
-            const { newState } = processTick(state, actions);
+            const { newState } = await processTick(state, actions);
             expect(newState.players['p1'].message).toContain("cannot attack your own clan");
         });
 
-        test('Insufficient Gold', () => {
+        test('Insufficient Gold', async () => {
             const state = setupWarState();
             state.clans['clanA'].gold = 0;
 
             const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'locB' }];
-            const { newState } = processTick(state, actions);
+            const { newState } = await processTick(state, actions);
 
             expect(newState.players['p1'].message).toContain("lacks the gold");
         });
 
-        test('Attack Win', () => {
+        test('Attack Win', async () => {
             const state = setupWarState();
             const p1 = state.players['p1']; // Adventurer
             const p2 = state.players['p2']; // Warrior
@@ -353,7 +373,7 @@ describe('processTick', () => {
             const initialClanBFood = state.clans['clanB'].food; // 100
             const initialClanBWood = state.clans['clanB'].wood; // 100
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
 
             const winner = newState.players['p1'];
             const loser = newState.players['p2'];
@@ -379,7 +399,7 @@ describe('processTick', () => {
             expect(winner.message).toContain("[+6 food]");
         });
 
-        test('Attack Win with Level Scaling', () => {
+        test('Attack Win with Level Scaling', async () => {
             const state = setupWarState();
             const p1 = state.players['p1'];
 
@@ -403,7 +423,7 @@ describe('processTick', () => {
 
             const dice = createDeterministicDice([0, 20, 5, 0]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
 
             const clanA = newState.clans['clanA'];
             const clanB = newState.clans['clanB'];
@@ -425,7 +445,7 @@ describe('processTick', () => {
             expect(winner.message).toContain("[+10 food]");
         });
 
-        test('Attack Lose', () => {
+        test('Attack Lose', async () => {
             const state = setupWarState();
             const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'locB' }];
 
@@ -437,14 +457,14 @@ describe('processTick', () => {
             // 4. Message: 0
 
             const dice = createDeterministicDice([0, 5, 15, 0]);
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
 
             const p1 = newState.players['p1'];
             expect(p1.meta.playerLosses).toBe(1);
             expect(p1.message).toContain("outmatched and routed");
         });
 
-        test('Clan Defeat Logic', () => {
+        test('Clan Defeat Logic', async () => {
             const state = setupWarState();
             // Set Clan B food very low so they get defeated
             state.clans['clanB'].wood = 0; // No shield
@@ -458,7 +478,7 @@ describe('processTick', () => {
             // Defeat message roll 1.
             const dice = createDeterministicDice([0, 20, 5, 0, 0]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
 
             expect(newState.clans['clanB'].food).toBe(0);
             expect(newState.clans['clanB'].defeatedBy).toBe('clanA');
@@ -468,7 +488,7 @@ describe('processTick', () => {
     });
 
     describe('ATTACK_MONSTER', () => {
-        test('Monster Kill and XP', () => {
+        test('Monster Kill and XP', async () => {
             const state = makeGameState();
             const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'monsters_base' }];
 
@@ -484,7 +504,7 @@ describe('processTick', () => {
             // 2. Message Roll: 0
 
             const dice = createDeterministicDice([17, 0]);
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
 
             const p = newState.players['p1'];
             // XP 9 * 1.1^1 = 9.9 -> 9.
@@ -496,7 +516,7 @@ describe('processTick', () => {
             expect(p.message).toContain("[+9 xp]");
         });
 
-        test('Level Up', () => {
+        test('Level Up', async () => {
             const state = makeGameState();
             // Level 1 -> 2 req: (1+2)^2 = 9 XP.
             // Give player 0 XP initially.
@@ -505,7 +525,7 @@ describe('processTick', () => {
             const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'monsters_base' }];
             const dice = createDeterministicDice([19, 0]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const p = newState.players['p1'];
 
             expect(p.character.level).toBe(2);
@@ -520,7 +540,7 @@ describe('processTick', () => {
     });
 
     describe('World Logic', () => {
-        test('World Log Generation', () => {
+        test('World Log Generation', async () => {
             const state = makeGameState();
             // Two players in LocA
             const p2 = makePlayer('p2', 'clanA');
@@ -545,7 +565,7 @@ describe('processTick', () => {
 
             state.players['p2'] = p2;
 
-            const { newState } = processTick(state, []);
+            const { newState } = await processTick(state, []);
 
             expect(newState.worldLog.day).toBe(2);
 
@@ -562,59 +582,59 @@ describe('processTick', () => {
 });
 
 describe('Dice & Determinism Safety', () => {
-    test('Roll Dice handles negative numbers', () => {
+    test('Roll Dice handles negative numbers', async () => {
         const state = makeGameState();
         const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
 
         // Dice: -5.
         // Gathering rules: -5 < 2 (max 2 rule) -> Reward 8.
         const dice = createDeterministicDice([-5, 0]);
-        const { newState } = processTick(state, actions, dice);
+        const { newState } = await processTick(state, actions, dice);
         const p1 = newState.players['p1'];
 
         // Multiplier: 8 * 1.05 = 8.
         expect(p1.message).toContain("[+8 food]");
     });
 
-    test('Roll Dice handles large numbers', () => {
+    test('Roll Dice handles large numbers', async () => {
         const state = makeGameState();
         const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
 
         // Dice: 999.
         const dice = createDeterministicDice([999, 0]);
-        const { newState } = processTick(state, actions, dice);
+        const { newState } = await processTick(state, actions, dice);
         const p1 = newState.players['p1'];
 
         // Reward 12 -> 12.
         expect(p1.message).toContain("[+12 food]");
     });
 
-    test('Message selection modulo safety', () => {
+    test('Message selection modulo safety', async () => {
         const state = makeGameState();
         const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
 
         // 1. Reward Roll: 10 (Default rule)
         // 2. Message Roll: 100. Rule has 4 messages.
         const dice = createDeterministicDice([10, 100]);
-        const { newState } = processTick(state, actions, dice);
+        const { newState } = await processTick(state, actions, dice);
 
         expect(newState.players['p1'].message).toBeDefined();
     });
 });
 
 describe('Player Action Validity', () => {
-    test('Invalid Action Type falls back to Wait behavior', () => {
+    test('Invalid Action Type falls back to Wait behavior', async () => {
         const state = makeGameState();
         const actions: Action[] = [{ playerId: 'p1', type: 'INVALID_TYPE' as any }];
 
         // Current behavior: Invaild types are filtered out, effectively "doing nothing".
         // We verify that state does not crash and no resource changes occur.
-        const { newState } = processTick(state, actions);
+        const { newState } = await processTick(state, actions);
 
         expect(newState.players['p1'].message).toBe("");
     });
 
-    test('Action Isolation', () => {
+    test('Action Isolation', async () => {
         const state = makeGameState();
         const p2 = makePlayer('p2', 'clanB');
         state.players['p2'] = p2;
@@ -625,7 +645,7 @@ describe('Player Action Validity', () => {
         ];
 
         const dice = createDeterministicDice([10, 0]);
-        const { newState } = processTick(state, actions, dice);
+        const { newState } = await processTick(state, actions, dice);
 
         expect(newState.players['p1'].meta.food).toBeGreaterThan(0);
         expect(newState.players['p2'].meta.food).toBe(0);
@@ -634,7 +654,7 @@ describe('Player Action Validity', () => {
 });
 
 describe('Attack Clan Edge Cases', () => {
-    test('Attack Defeated Clan Blocked', () => {
+    test('Attack Defeated Clan Blocked', async () => {
         const state = makeGameState();
         const p2 = makePlayer('p2', 'clanB');
         state.players['p2'] = p2;
@@ -642,12 +662,12 @@ describe('Attack Clan Edge Cases', () => {
         // Engine check: if (!defenderClan || defenderClan.food <= 0)
 
         const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'locB' }];
-        const { newState } = processTick(state, actions);
+        const { newState } = await processTick(state, actions);
 
         expect(newState.players['p1'].message).toContain("already fallen");
     });
 
-    test('Destruction Logic', () => {
+    test('Destruction Logic', async () => {
         const state = makeGameState();
         const p2 = makePlayer('p2', 'clanB');
         state.players['p2'] = p2;
@@ -671,7 +691,7 @@ describe('Attack Clan Edge Cases', () => {
         // 5. Destruction Msg: 0
 
         const dice = createDeterministicDice([0, 20, 5, 0, 0]);
-        const { newState } = processTick(state, actions, dice);
+        const { newState } = await processTick(state, actions, dice);
 
         expect(newState.clans['clanB'].food).toBe(0);
         expect(newState.clans['clanB'].wood).toBe(0);
@@ -679,7 +699,7 @@ describe('Attack Clan Edge Cases', () => {
         expect(newState.clans['clanB'].defeatedBy).toBe('clanA');
     });
 
-    test('Streaks', () => {
+    test('Streaks', async () => {
         const state = makeGameState();
         const p2 = makePlayer('p2', 'clanB');
         state.players['p2'] = p2;
@@ -689,7 +709,7 @@ describe('Attack Clan Edge Cases', () => {
 
         // Win Scenario
         const diceWin = createDeterministicDice([0, 20, 5, 0]);
-        const res1 = processTick(state, actions, diceWin);
+        const res1 = await processTick(state, actions, diceWin);
         expect(res1.newState.players['p1'].meta.attackWinStreak).toBe(1);
         expect(res1.newState.players['p1'].meta.attackLoseStreak).toBe(0);
 
@@ -700,20 +720,20 @@ describe('Attack Clan Edge Cases', () => {
         // For now, testing Lose increments Lose streak is sufficient per req.
 
         const diceLose = createDeterministicDice([0, 5, 20, 0]);
-        const res2 = processTick(state, actions, diceLose);
+        const res2 = await processTick(state, actions, diceLose);
         expect(res2.newState.players['p1'].meta.attackLoseStreak).toBe(1);
         expect(res2.newState.players['p1'].meta.attackWinStreak).toBe(0);
     });
 });
 
 describe('Monster Attack Edge Cases', () => {
-    test('No Kill Scenario', () => {
+    test('No Kill Scenario', async () => {
         const state = makeGameState();
         const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'monsters_base' }];
 
         // Dice: 5 (max 5 -> xp 4, kill false)
         const dice = createDeterministicDice([5, 0]);
-        const { newState } = processTick(state, actions, dice);
+        const { newState } = await processTick(state, actions, dice);
 
         const p1 = newState.players['p1'];
         expect(p1.meta.monsterEncountered).toBe(1);
@@ -721,7 +741,7 @@ describe('Monster Attack Edge Cases', () => {
         expect(p1.message).toContain("[+4 xp]");
     });
 
-    test('Multi-Level Up', () => {
+    test('Multi-Level Up', async () => {
         const state = makeGameState();
         const p1 = state.players['p1'];
 
@@ -751,7 +771,7 @@ describe('Monster Attack Edge Cases', () => {
         const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'monsters_base' }];
         const dice = createDeterministicDice([17, 0]); // XP 9 (Min 16 rule). Match found.
 
-        const { newState } = processTick(state, actions, dice);
+        const { newState } = await processTick(state, actions, dice);
         const newP1 = newState.players['p1'];
 
         // Initial 100 + 7 = 107.
@@ -768,7 +788,7 @@ describe('Monster Attack Edge Cases', () => {
 });
 
 describe('World / Location Logs Extended', () => {
-    test('Shared Clan Locations', () => {
+    test('Shared Clan Locations', async () => {
         const state = makeGameState();
         // LocA (ClanA), LocB (ClanA).
         state.locations['locB'].clanId = 'clanA';
@@ -782,7 +802,7 @@ describe('World / Location Logs Extended', () => {
 
         state.players['p2'] = p2;
 
-        const { newState } = processTick(state, []);
+        const { newState } = await processTick(state, []);
 
         const locALog = newState.locationLogs['locA'];
         const locBLog = newState.locationLogs['locB'];
@@ -796,7 +816,7 @@ describe('World / Location Logs Extended', () => {
 });
 
 describe('Explore Edge Cases', () => {
-    test('Defeated Clan Resource Logic', () => {
+    test('Defeated Clan Resource Logic', async () => {
         const state = makeGameState();
         state.clans['clanA'].defeatedBy = 'clanB';
 
@@ -809,7 +829,7 @@ describe('Explore Edge Cases', () => {
         // 3. Message: 0
         const dice = createDeterministicDice([10, 4, 0]);
 
-        const { newState } = processTick(state, actions, dice);
+        const { newState } = await processTick(state, actions, dice);
 
         // Player gets message + meta (implied via engine logic check?)
         // Engine logic: if (!clan.defeatedBy) { clan.food += ... }
@@ -819,7 +839,7 @@ describe('Explore Edge Cases', () => {
         expect(newState.players['p1'].message).toContain("Your clan has fallen");
     });
 
-    test('Trap Resource Loss Floor', () => {
+    test('Trap Resource Loss Floor', async () => {
         const state = makeGameState();
         // Low resources
         state.clans['clanA'].food = 5;
@@ -834,14 +854,14 @@ describe('Explore Edge Cases', () => {
         // 4. Message: 0
         const dice = createDeterministicDice([5, 8, 0, 0]);
 
-        const { newState } = processTick(state, actions, dice);
+        const { newState } = await processTick(state, actions, dice);
 
         // Lost 10 (multiplied -> 10). 5 - 10 = -5 -> Floor 0.
         expect(newState.clans['clanA'].food).toBe(0);
         expect(newState.players['p1'].message).toContain("[-10 food]");
     });
 
-    test('Trap XP Safety', () => {
+    test('Trap XP Safety', async () => {
         const state = makeGameState();
 
         const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
@@ -854,7 +874,7 @@ describe('Explore Edge Cases', () => {
         // 4. Message: 0
         const dice = createDeterministicDice([20, 8, 0, 0]);
 
-        const { newState } = processTick(state, actions, dice);
+        const { newState } = await processTick(state, actions, dice);
 
         // Food should NOT decrease.
         expect(newState.clans['clanA'].food).toBe(100);
@@ -865,7 +885,7 @@ describe('Explore Edge Cases', () => {
 describe('Title System', () => {
 
     describe('Title Unlocking', () => {
-        test('Unlock Title on Threshold Met', () => {
+        test('Unlock Title on Threshold Met', async () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             // Req for 'forager': gatherFoodCount >= 10.
@@ -875,7 +895,7 @@ describe('Title System', () => {
             // Dice 10 -> Reward 10 (base).
             const dice = createDeterministicDice([10, 0]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const newP1 = newState.players['p1'];
 
             // 9 + 1 = 10. Threshold met.
@@ -884,7 +904,7 @@ describe('Title System', () => {
             expect(newP1.message).toContain("[TITLE UNLOCKED: The Forager]");
         });
 
-        test('Unlock only once', () => {
+        test('Unlock only once', async () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             p1.meta.gatherFoodCount = 15;
@@ -893,7 +913,7 @@ describe('Title System', () => {
             const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
             const dice = createDeterministicDice([10, 0]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const newP1 = newState.players['p1'];
 
             // Should still be just one 'forager'
@@ -904,7 +924,7 @@ describe('Title System', () => {
     });
 
     describe('Title Bonuses - Fortune', () => {
-        test('Fortune Bonus modifies Dice', () => {
+        test('Fortune Bonus modifies Dice', async () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             // 'unlucky' title grants +1 Fortune.
@@ -918,7 +938,7 @@ describe('Title System', () => {
 
             const dice = createDeterministicDice([18, 0]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
 
             // Multiplier: 12 * 1.05 = 12.
             // Title Bonus (food): 'unlucky' gives 0 food.
@@ -927,7 +947,7 @@ describe('Title System', () => {
             expect(newState.players['p1'].message).toContain("[+12 food]");
         });
 
-        test('Fortune Clamping', () => {
+        test('Fortune Clamping', async () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             p1.character.titles = ['unlucky']; // +1
@@ -938,13 +958,13 @@ describe('Title System', () => {
             // Reward 12.
 
             const dice = createDeterministicDice([20, 0]);
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             expect(newState.players['p1'].message).toContain("[+12 food]");
         });
     });
 
     describe('Title Bonuses - Resources/XP', () => {
-        test('Resource Bonus Application', () => {
+        test('Resource Bonus Application', async () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             // 'forager' -> +1 Food.
@@ -957,12 +977,12 @@ describe('Title System', () => {
             // Bonus +1 -> 11.
 
             const dice = createDeterministicDice([10, 0]);
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
 
             expect(newState.players['p1'].message).toContain("[+11 food]");
         });
 
-        test('XP Bonus Application', () => {
+        test('XP Bonus Application', async () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             // 'wanderer' -> +1 XP.
@@ -977,7 +997,7 @@ describe('Title System', () => {
 
             const dice = createDeterministicDice([10, 0, 0]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const newP1 = newState.players['p1'];
 
             // XP Math: 
@@ -990,7 +1010,7 @@ describe('Title System', () => {
             expect(newP1.message).toContain("[+6 xp]");
         });
 
-        test('Bonus Caps', () => {
+        test('Bonus Caps', async () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             // Stack titles to exceed cap of 3.
@@ -1007,14 +1027,14 @@ describe('Title System', () => {
             // Total 13.
 
             const dice = createDeterministicDice([10, 0]);
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
 
             expect(newState.players['p1'].message).toContain("[+13 food]");
         });
     });
 
     describe('Edge Cases & Integrations', () => {
-        test('Fortune in PvP', () => {
+        test('Fortune in PvP', async () => {
             const state = makeGameState();
             const p2 = makePlayer('p2', 'clanB');
             state.players['p2'] = p2;
@@ -1032,7 +1052,7 @@ describe('Title System', () => {
 
             const dice = createDeterministicDice([0, 10, 10, 0]);
 
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
 
             expect(newState.players['p1'].meta.playerWins).toBe(1);
         });

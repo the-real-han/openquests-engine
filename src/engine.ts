@@ -316,7 +316,7 @@ function getActiveLocationModifier(
  * Pure function to process a single tick of the game world.
  * Must be deterministic and side-effect free.
  */ //
-export function processTick(initialState: GameState, actions: Action[], rollDice: DiceFn = rollRandomDice): TickResult {
+export async function processTick(initialState: GameState, actions: Action[], rollDice: DiceFn = rollRandomDice): Promise<TickResult> {
 
     // Deep copy state to ensure immutability during processing
     const nextState = JSON.parse(JSON.stringify(initialState)) as GameState;
@@ -613,13 +613,13 @@ export function processTick(initialState: GameState, actions: Action[], rollDice
     maybeSpawnLocationModifiers(nextState, rollDice);
 
     // 3. Update World & Generate Logs
-    const worldLog = generateWorldLog(nextState);
+    const worldLog = await generateWorldLog(nextState);
     nextState.worldLog = worldLog;
 
     if (!nextState.locationLogs) nextState.locationLogs = {};
 
     for (const location of Object.values(nextState.locations)) {
-        nextState.locationLogs[location.id] = generateLocationLog(initialState, nextState, location);
+        nextState.locationLogs[location.id] = await generateLocationLog(initialState, nextState, location);
     }
 
     // 4. Generate Narrative

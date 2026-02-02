@@ -182,7 +182,7 @@ export async function runTick() {
 
         // 3. Process Turn
         console.log('Processing tick...');
-        const result = processTick(gameState, actions);
+        const result = await processTick(gameState, actions);
 
         // 4. Save State
         console.log('Saving new state...');

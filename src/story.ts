@@ -1,22 +1,36 @@
 import { GameState, LocationLog, LocationModifier, LocationState, Player, WorldLog } from '@openquests/schema';
-import BOSS_RULES from "./rules/boss.rules.json"
+import { GoogleGenAI } from '@google/genai';
 
-export function generateSummary(
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+
+export async function generateWorldSummary(
     input: WorldNarrationInput
-): Pick<WorldLog, "summary" | "notes"> {
-    return {
-        summary: `Day ${input.day} passes without a chronicler's voice.`,
-        notes: []
-    }
+): Promise<string> {
+
+    const prompt = buildWorldPrompt(input);
+    const response = await genAI.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+    });
+
+    const text = response.text ?? "";
+    console.log(text)
+    return text.trim();
 }
 
-export function generateLocationSummary(
+export async function generateLocationSummary(
     input: LocationNarrationInput
-): Pick<LocationLog, "summary" | "notes"> {
-    return {
-        summary: `Life continues at ${input.location}.`,
-        notes: []
-    }
+): Promise<string> {
+    const prompt = buildLocationPrompt(input);
+
+    const result = await genAI.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+    });
+
+    const text = result.text ?? "";
+    console.log(text)
+    return text.trim();
 }
 
 export type WorldNarrationInput = {
@@ -59,6 +73,48 @@ export type LocationNarrationInput = {
         message?: string
     }[]
 }
+
+function buildWorldPrompt(input: WorldNarrationInput): string {
+    return `
+You are a fantasy world narrator for a turn-based strategy RPG.
+
+Write a short world log for Day ${input.day}.
+Tone: mythic, neutral, slightly dramatic.
+Length: 2–4 sentences.
+
+Rules:
+- Do NOT invent events.
+- Only describe what appears in the input.
+- If no events occurred, describe a calm or uneventful day.
+- Do NOT mention numbers unless provided.
+- Do NOT mention players directly.
+
+World Events (JSON):
+${JSON.stringify(input, null, 2)}
+`;
+}
+
+function buildLocationPrompt(input: LocationNarrationInput): string {
+    return `
+You are narrating events at a single location in a fantasy world.
+
+Location: ${input.location}
+Day: ${input.day}
+
+Write 2–3 sentences describing what happened here.
+
+Rules:
+- Only describe events listed below.
+- If a clan was defeated or conquered, that is the most important event.
+- If resources increased, mention only the largest gain.
+- Do NOT mention population.
+- Do NOT invent battles, weather, or characters.
+
+Location Events (JSON):
+${JSON.stringify(input, null, 2)}
+`;
+}
+
 
 
 export function buildWorldNarrationInput(state: GameState): WorldNarrationInput {
@@ -103,18 +159,18 @@ export function buildWorldNarrationInput(state: GameState): WorldNarrationInput 
     }
 }
 
-export function generateWorldLog(state: GameState): WorldLog {
+export async function generateWorldLog(state: GameState): Promise<WorldLog> {
     const narrationInput = buildWorldNarrationInput(state);
 
     // --- 6. Generate summary (AI later) ---
-    const { summary, notes } = generateSummary(narrationInput)
+    const summary = await generateWorldSummary(narrationInput)
 
     // --- 7. Return WorldLog ---
     return {
         day: state.day,
         population: narrationInput.population,
         summary,
-        notes
+        notes: []
     }
 }
 
@@ -211,23 +267,22 @@ export function buildLocationNarrationInput(
     }
 }
 
-export function generateLocationLog(
+export async function generateLocationLog(
     previousState: GameState,
     state: GameState,
     location: LocationState
-): LocationLog {
+): Promise<LocationLog> {
     const narrationInput = buildLocationNarrationInput(previousState, state, location);
 
     // --- 6. AI narration (stubbed) ---
-    const { summary, notes } =
-        generateLocationSummary(narrationInput)
+    const summary = await generateLocationSummary(narrationInput)
 
     const population = Object.values(state.players).filter(p => p.character.clanId === location.clanId).length;
 
     return {
         day: state.day,
         summary,
-        notes,
+        notes: [],
         population
     }
 }

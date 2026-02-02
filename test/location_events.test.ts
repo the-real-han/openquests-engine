@@ -1,8 +1,18 @@
 
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { processTick } from '../src/engine';
 import { GameState, Player, Clan, Action, PlayerClass, LocationModifier } from '@openquests/schema';
 import LOCATION_EVENTS from '../src/rules/locationEvent.rules.json';
+
+// Mock AI generation
+vi.mock('../src/story', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../src/story')>();
+    return {
+        ...actual,
+        generateWorldLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock World", notes: [], population: 0 }),
+        generateLocationLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock Loc", notes: [], population: 0 })
+    };
+});
 
 // --- Fixtures ---
 
@@ -52,9 +62,9 @@ function makeGameState(): GameState {
     return {
         day: 1,
         locations: {
-            'locA': { id: 'locA', description: 'Location A', clanId: 'clanA' },
-            'locB': { id: 'locB', description: 'Location B', clanId: 'clanB' },
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters' }
+            'locA': { id: 'locA', description: 'Location A', clanId: 'clanA', name: 'Location A' },
+            'locB': { id: 'locB', description: 'Location B', clanId: 'clanB', name: 'Location B' },
+            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base' }
         },
         players: { [player1.github.username]: player1 },
         worldLog: { day: 0, summary: '', population: 0, notes: [] },
@@ -80,7 +90,7 @@ function createDeterministicDice(rolls: number[]) {
 describe('Location Events & Modifiers', () => {
 
     describe('Modifier Spawning', () => {
-        test('Spawns modifier when roll < 4', () => {
+        test('Spawns modifier when roll < 4', async () => {
             const state = makeGameState();
             // Dice:
             // 1. Boss Spawn: 1 (Fail)
@@ -90,7 +100,7 @@ describe('Location Events & Modifiers', () => {
             // 5. Message Roll: 0
             const dice = createDeterministicDice([1, 3, 0, 0, 0]);
 
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
             expect(newState.locationModifiers).toBeDefined();
             expect(newState.locationModifiers?.length).toBe(1);
@@ -99,16 +109,16 @@ describe('Location Events & Modifiers', () => {
             expect(newState.worldEvents.find(e => e.type === 'WEATHER')).toBeDefined();
         });
 
-        test('Does not spawn modifier when roll >= 4', () => {
+        test('Does not spawn modifier when roll >= 4', async () => {
             const state = makeGameState();
             // Dice: Boss(1), LocMod(4, Fail)
             const dice = createDeterministicDice([1, 4]);
 
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
             expect(newState.locationModifiers?.length).toBe(0);
         });
 
-        test('Modifiers are cleared/replaced next tick', () => {
+        test('Modifiers are cleared/replaced next tick', async () => {
             const state = makeGameState();
             state.locationModifiers = [{
                 id: 'old_mod',
@@ -121,14 +131,14 @@ describe('Location Events & Modifiers', () => {
 
             // Dice: Boss(1), LocMod(4, Fail) -> Modifiers should be overwritten by empty list
             const dice = createDeterministicDice([1, 4]);
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
             expect(newState.locationModifiers).toHaveLength(0);
         });
     });
 
     describe('Resource Loss (Invasion/Curse)', () => {
-        test('Goblin Raid reduces gold and wood', () => {
+        test('Goblin Raid reduces gold and wood', async () => {
             const state = makeGameState();
             // Set up Goblin Raid manually to match new rules
             // Goblin Raid: Gold 10%, Wood 10%
@@ -149,7 +159,7 @@ describe('Location Events & Modifiers', () => {
             // Dice: just enough for basic processing
             const dice = createDeterministicDice([1, 4]);
 
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
             // Gold: 100 * 0.1 = 10 loss -> 90 remaining
             // Wood: 100 * 0.1 = 10 loss -> 90 remaining
@@ -159,7 +169,7 @@ describe('Location Events & Modifiers', () => {
             expect(newState.clans['clanA'].food).toBe(100);
         });
 
-        test('Resource loss does not drop below 0', () => {
+        test('Resource loss does not drop below 0', async () => {
             const state = makeGameState();
             state.locationModifiers = [{
                 id: 'invasion_heavy',
@@ -172,7 +182,7 @@ describe('Location Events & Modifiers', () => {
             state.clans['clanA'].food = 1;
 
             const dice = createDeterministicDice([1, 4]);
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
             // 1 * 0.5 = 0.5 -> floor(0.5) = 0? Or floor(loss)?
             // Code: loss = Math.floor(clan[res] * pct)
@@ -182,7 +192,7 @@ describe('Location Events & Modifiers', () => {
             // Try with 2: 2 * 0.5 = 1 -> loss 1 -> 1 left.
         });
 
-        test('Defeated clan ignores resource loss', () => {
+        test('Defeated clan ignores resource loss', async () => {
             const state = makeGameState();
             state.locationModifiers = [{
                 id: 'invasion_goblin_raid',
@@ -196,7 +206,7 @@ describe('Location Events & Modifiers', () => {
             state.clans['clanA'].defeatedBy = 'other_clan';
 
             const dice = createDeterministicDice([1, 4]);
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
             expect(newState.clans['clanA'].food).toBe(100);
         });
@@ -204,7 +214,7 @@ describe('Location Events & Modifiers', () => {
 
     describe('Fortune Stacking', () => {
 
-        test('Fortune affects ATTACK_MONSTER (Reversed Logic)', () => {
+        test('Fortune affects ATTACK_MONSTER (Reversed Logic)', async () => {
             const state = makeGameState();
             // Monster Base has Blessing (+2 Fortune)
             // Logic: dice - fortuneMod. 
@@ -235,7 +245,7 @@ describe('Location Events & Modifiers', () => {
             // Message will match XP.
 
             const dice = createDeterministicDice([19, 0]);
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const p1 = newState.players['1'];
 
             // Expect XP 9 (indicating 17 was used), NOT 11 (indicating 19).
@@ -244,7 +254,7 @@ describe('Location Events & Modifiers', () => {
             expect(p1.message).toContain("[+9 xp]");
         });
 
-        test('Explore Logic (Target Bonus Only - Home Ignored)', () => {
+        test('Explore Logic (Target Bonus Only - Home Ignored)', async () => {
             const state = makeGameState();
             // Home (locA): Modifiers that should be IGNORED
             // Fortune +10, Explore +10.
@@ -265,7 +275,7 @@ describe('Location Events & Modifiers', () => {
             const actions: Action[] = [{ playerId: '1', type: 'EXPLORE', target: 'locB' }];
 
             const dice = createDeterministicDice([18, 0, 0]);
-            const { newState } = processTick(state, actions, dice);
+            const { newState } = await processTick(state, actions, dice);
             const p1 = newState.players['1'];
 
             // 7 * 1.05 = 7.35 -> 7.

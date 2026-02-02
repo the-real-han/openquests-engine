@@ -1,9 +1,19 @@
 
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { processTick } from '../src/engine';
 import { GameState, Player, Clan, Action, PlayerClass } from '@openquests/schema';
 import BOSS_RULES from '../src/rules/boss.rules.json';
 import TITLES from '../src/rules/title.rules.json';
+
+// Mock AI generation
+vi.mock('../src/story', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../src/story')>();
+    return {
+        ...actual,
+        generateWorldLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock World", notes: [], population: 0 }),
+        generateLocationLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock Loc", notes: [], population: 0 })
+    };
+});
 
 // --- Fixtures ---
 
@@ -53,7 +63,7 @@ function makeGameState(): GameState {
     return {
         day: 1,
         locations: {
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters' }
+            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base' }
         },
         players: { [player1.github.username]: player1 },
         worldLog: { day: 0, summary: '', population: 0, notes: [] },
@@ -79,17 +89,16 @@ function createDeterministicDice(rolls: number[]) {
 describe('Regressions', () => {
 
     describe('Boss Flow', () => {
-        test('Full Boss Lifecycle (Spawn -> Appear -> Defeat)', () => {
+        test('Full Boss Lifecycle (Spawn -> Appear -> Defeat)', async () => {
             const state = makeGameState();
             const boss = BOSS_RULES.find(b => b.id === 'great_eagle')!;
 
             // Step 1: Spawn Boss
             // Dice: Boss Check (20 roll -> >17), Boss Select (Great Eagle idx), LocMod(Fail 4)
-            // Need correct dice sequence. 
             // maybeSpawnBoss calls: rollDice() -> check > 17. If true: rollDice() -> pick boss.
             // maybeSpawnLocationModifiers calls: rollDice() -> check < 4.
             const spawnDice = createDeterministicDice([18, 7, 4]); // 18 (>17), 7 (eagle), 4 (no mod)
-            const { newState: s1 } = processTick(state, [], spawnDice);
+            const { newState: s1 } = await processTick(state, [], spawnDice);
 
             expect(s1.activeBoss?.bossId).toBe(boss.id);
             expect(s1.worldEvents.some(e => e.type === 'BOSS_APPEAR')).toBe(true);
@@ -109,23 +118,20 @@ describe('Regressions', () => {
             // Dice:
             // 1. Wait/Actions logic (none)
             // 2. Boss Resolution:
-            //    - Success. 
-            //    - Rewards loop. (xp mult etc) -> no dice rolled if level up doesn't roll?
-            //    - Level up pushes message.
-            //    - Success Message Roll: 0.
+            //    - Success message roll
             // 3. New Boss Check: 1 (Fail).
             // 4. LocMod Check: 4 (Fail).
 
             const resolveDice = createDeterministicDice([0, 1, 4]); // 0 for boss msg
 
-            const { newState: s2 } = processTick(s1, actions, resolveDice);
+            const { newState: s2 } = await processTick(s1, actions, resolveDice);
 
             expect(s2.activeBoss).toBeNull();
             expect(s2.worldEvents.some(e => e.type === 'BOSS_DEFEATED')).toBe(true);
             expect(s2.players['1'].character.xp).toBeGreaterThan(0);
         });
 
-        test('Boss Expiration Lifecycle', () => {
+        test('Boss Expiration Lifecycle', async () => {
             const state = makeGameState();
             state.activeBoss = {
                 bossId: 'iron_behemoth',
@@ -139,7 +145,7 @@ describe('Regressions', () => {
             // Dice: Boss(1), LocMod(4)
             const dice = createDeterministicDice([0, 1, 4]); // 0 for boss fail msg
 
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
             expect(newState.activeBoss).toBeNull();
             expect(newState.worldEvents.some(e => e.type === 'BOSS_FAILED')).toBe(true);
@@ -147,36 +153,30 @@ describe('Regressions', () => {
     });
 
     describe('Title Granting', () => {
-        test('Title granted only once', () => {
+        test('Title granted only once', async () => {
             const state = makeGameState();
             const player = state.players['1'];
-            const title = TITLES[0]; // Assume first title is achievable
-            // Mock requirement met
-            // Force requirement to be met
-            // e.g. "gatherFoodCount >= 10"
-            // We set it manually.
 
             // Find a simple title
             const simpleTitle = TITLES.find(t => t.requirement.field === 'meta.gatherFoodCount') || TITLES[0];
             const needed = simpleTitle.requirement.value;
-            // Handle if value is number
 
             player.meta.gatherFoodCount = Number(needed) + 1;
 
             // Process Tick
             const dice = createDeterministicDice([1, 4]);
-            const { newState: s1 } = processTick(state, [], dice);
+            const { newState: s1 } = await processTick(state, [], dice);
 
             expect(s1.players['1'].character.titles).toContain(simpleTitle.id);
 
             // Second tick - should not duplicate or error, log message should check uniqueness if we tracked logs cleanly.
             // But we can check list length if we assume it doesn't duplicate.
 
-            const { newState: s2 } = processTick(s1, [], dice);
+            const { newState: s2 } = await processTick(s1, [], dice);
             expect(s2.players['1'].character.titles.filter(t => t === simpleTitle.id).length).toBe(1);
         });
 
-        test('Title bonuses applied', () => {
+        test('Title bonuses applied', async () => {
             // Give player a title with +XP bonus
             const state = makeGameState();
             const titleXp = TITLES.find(t => t.bonus?.xp && t.bonus.xp > 0);

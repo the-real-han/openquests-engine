@@ -1,8 +1,18 @@
 
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { processTick } from '../src/engine';
 import { GameState, Player, Clan, Action, PlayerClass } from '@openquests/schema';
 import BOSS_RULES from '../src/rules/boss.rules.json';
+
+// Mock AI generation
+vi.mock('../src/story', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../src/story')>();
+    return {
+        ...actual,
+        generateWorldLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock World", notes: [], population: 0 }),
+        generateLocationLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock Loc", notes: [], population: 0 })
+    };
+});
 
 // --- Fixtures ---
 
@@ -52,12 +62,12 @@ function makePlayer(id: string, clanId: string, charClass: PlayerClass = 'Advent
 function makeGameState(): GameState {
     const clanA = makeClan('clanA', 'Clan A');
     const player1 = makePlayer('1', 'clanA');
-    // const player2 = makePlayer('2', 'clanA'); // Unused for now
-
 
     return {
         day: 1,
         locations: {
+            'locA': { id: 'locA', description: 'Desc A', clanId: 'clanA', name: 'Location A' },
+            'locB': { id: 'locB', description: 'Desc B', clanId: 'clanB', name: 'Location B' },
             'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base' }
         },
         players: { [player1.github.username]: player1 },
@@ -67,7 +77,8 @@ function makeGameState(): GameState {
             [clanA.id]: clanA
         },
         activeBoss: null,
-        worldEvents: []
+        worldEvents: [],
+        locationModifiers: []
     };
 }
 
@@ -84,34 +95,35 @@ function createDeterministicDice(rolls: number[]) {
 
 describe('Boss Mechanics', () => {
 
-    describe('Boss Spawn Logic', () => {
-        test('Boss spawns when roll is 20', () => {
+    describe('Boss Spawning', () => {
+        test('Spawns boss when day > 1 and roll > 17', async () => {
             const state = makeGameState();
-            // User updated code: const boss = BOSS_RULES[rollDice() % BOSS_RULES.length]
-            // Dice Needed:
-            // 1. Spawn Check Roll: 20
-            // 2. Boss Selection Roll: 0 (Iron Behemoth)
-            const dice = createDeterministicDice([20, 0]);
+            // Dice:
+            // 1. Boss Spawn Check: 19 (> 17)
+            // 2. Boss Selection: 0 (index 0 -> Iron Behemoth)
+            // 3. Location Mod Check: 4 (Fail, so no mod)
+            const dice = createDeterministicDice([19, 0, 4]);
 
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
+            // Should spawn Iron Behemoth
             expect(newState.activeBoss).toBeDefined();
             expect(newState.activeBoss?.bossId).toBe(BOSS_RULES[0].id);
             expect(newState.activeBoss?.appearedOn).toBe(2); // Day 1 -> 2
         });
 
-        test('Emits BOSS_APPEAR event', () => {
+        test('Emits BOSS_APPEAR event', async () => {
             const state = makeGameState();
             const dice = createDeterministicDice([20, 0]);
 
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
             const event = newState.worldEvents.find(e => e.type === 'BOSS_APPEAR');
 
             expect(event).toBeDefined();
             expect(event?.data?.bossName).toBe(BOSS_RULES[0].name);
         });
 
-        test('Boss does not spawn if active boss exists', () => {
+        test('Boss does not spawn if active boss exists', async () => {
             const state = makeGameState();
             state.activeBoss = {
                 bossId: BOSS_RULES[0].id, // Use valid ID
@@ -123,7 +135,7 @@ describe('Boss Mechanics', () => {
 
             // Dice: 20 (would spawn if null).
             const dice = createDeterministicDice([20, 0]);
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
             // Should still be the old boss
             expect(newState.activeBoss?.bossId).toBe(BOSS_RULES[0].id);
@@ -132,17 +144,17 @@ describe('Boss Mechanics', () => {
             expect(validEvents.length).toBe(0);
         });
 
-        test('Boss does not spawn if roll is not > 17', () => {
+        test('Boss does not spawn if roll is not > 17', async () => {
             const state = makeGameState();
             const dice = createDeterministicDice([10]); // Not > 17
 
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
             expect(newState.activeBoss).toBeNull();
         });
     });
 
     describe('Boss Participation', () => {
-        test('Attacking monsters_base adds player to participants', () => {
+        test('Attacking monsters_base adds player to participants', async () => {
             const state = makeGameState();
             state.activeBoss = {
                 bossId: BOSS_RULES[0].id, // Iron Behemoth
@@ -153,19 +165,15 @@ describe('Boss Mechanics', () => {
             };
 
             const actions: Action[] = [{ playerId: '1', type: 'ATTACK', target: 'monsters_base' }];
-            // processTick logic: if boss active, just add participant and continue. No dice needed for attack resolution?
-            // "if (boss) { ... pushMessage ... continue }"
-            // But processTick creates `nextState` deep copy.
 
-            const { newState } = processTick(state, actions);
+            const { newState } = await processTick(state, actions);
 
-            // expect(newState.activeBoss?.participants).toContain(1); // cleared at end of tick
             expect(newState.players['1'].message).toContain("join the hunt");
             // Also check failure XP to ensure participation
             expect(newState.players['1'].character.xp).toBeGreaterThan(0);
         });
 
-        test('Duplicate participation prevented', () => {
+        test('Duplicate participation prevented', async () => {
             const state = makeGameState();
             state.activeBoss = {
                 bossId: BOSS_RULES[0].id,
@@ -176,7 +184,7 @@ describe('Boss Mechanics', () => {
             };
 
             const actions: Action[] = [{ playerId: '1', type: 'ATTACK', target: 'monsters_base' }];
-            const { newState } = processTick(state, actions);
+            const { newState } = await processTick(state, actions);
 
             // Participants should still only have one '1'
             // Participants cleared. Check XP to ensure no double-dip.
@@ -189,16 +197,7 @@ describe('Boss Mechanics', () => {
     });
 
     describe('Boss Resolution', () => {
-        // Iron Behemoth: Min 10 players, Warrior 10.
-        // Let's pick a boss with easier reqs or mock the boss rules?
-        // We can't mock imports easily in Vitest without verifying module mocks setup.
-        // Better to just create enough players in the state to match Iron Behemoth or another boss.
-
-        // Iron Behemoth: Min 10, Warrior 10.
-        // Veil of Whispers (index 3): Min 5, Monk 5.
-        // Great Eagle (index 7): Min 5, Archer 5.
-
-        test('Resolution Fails - Requirements not met', () => {
+        test('Resolution Fails - Requirements not met', async () => {
             const state = makeGameState();
             const boss = BOSS_RULES[0]; // Iron Behemoth
             state.activeBoss = {
@@ -214,7 +213,7 @@ describe('Boss Mechanics', () => {
             // Players get Failure XP.
             const dice = createDeterministicDice([0]); // Message roll
 
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
             const p1 = newState.players['1'];
 
             // Not defeated -> Boss remains.
@@ -228,7 +227,7 @@ describe('Boss Mechanics', () => {
             expect(newState.activeBoss?.participants).toEqual([]);
         });
 
-        test('Resolution Success - Requirements met', () => {
+        test('Resolution Success - Requirements met', async () => {
             const state = makeGameState();
             // Use 'Great Eagle' (index 7) -> Min 5, Archer 5.
             // We need to ensure we invoke the resolution for this specific boss.
@@ -256,7 +255,7 @@ describe('Boss Mechanics', () => {
             // ... Events ... null.
             const dice = createDeterministicDice([0]);
 
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
             // Boss should be cleared
             expect(newState.activeBoss).toBeNull();
@@ -281,7 +280,7 @@ describe('Boss Mechanics', () => {
     });
 
     describe('Boss Expiration', () => {
-        test('Boss expires when day >= expiresOn', () => {
+        test('Boss expires when day >= expiresOn', async () => {
             const state = makeGameState();
             const boss = BOSS_RULES[0]; // Iron Behemoth
             state.activeBoss = {
@@ -305,7 +304,7 @@ describe('Boss Mechanics', () => {
 
             const dice = createDeterministicDice([0]); // Fail msg
 
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
             expect(newState.activeBoss).toBeNull();
             expect(newState.worldEvents.some(e => e.type === 'BOSS_FAILED')).toBe(true);
@@ -314,7 +313,7 @@ describe('Boss Mechanics', () => {
             expect(newState.players['1'].character.xp).toBeGreaterThan(0);
         });
 
-        test('Boss does not expire before expiresOn', () => {
+        test('Boss does not expire before expiresOn', async () => {
             const state = makeGameState();
             const boss = BOSS_RULES[0];
             state.activeBoss = {
@@ -329,7 +328,7 @@ describe('Boss Mechanics', () => {
             // day 2 < 3. 
 
             const dice = createDeterministicDice([0]);
-            const { newState } = processTick(state, [], dice);
+            const { newState } = await processTick(state, [], dice);
 
             expect(newState.activeBoss).not.toBeNull();
             expect(newState.worldEvents.some(e => e.type === 'BOSS_FAILED')).toBe(false);

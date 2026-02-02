@@ -13,8 +13,8 @@
     "build": "tsc",
     "tick": "ts-node src/index.ts",
     "prepare": "npm run build",
-    "test": "for f in test/*.ts; do echo \"Running $f...\"; ts-node $f; done",
-    "test:unit": "vitest run test/processTick.test.ts"
+    "test": "node --env-file=.env ./node_modules/vitest/vitest.mjs run",
+    "vitest": "npx vitest"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +22,7 @@
   "dependencies": {
     "@actions/core": "^1.10.1",
     "@actions/github": "^6.0.0",
+    "@google/genai": "^1.39.0",
     "@openquests/schema": "github:the-real-han/openquests-schema"
   },
   "devDependencies": {
