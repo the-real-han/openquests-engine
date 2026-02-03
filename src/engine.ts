@@ -284,7 +284,7 @@ function maybeSpawnLocationModifiers(
         const locations = Object.values(state.locations)
         const location = locations[Math.abs(rollDice()) % locations.length]
         const locationEvent = LOCATION_EVENTS[Math.abs(rollDice()) % LOCATION_EVENTS.length] as LocationEvent
-        if (!(location.id === "monsters_base" && locationEvent.type !== "WEATHER")) {
+        if (!(location.clanId === "monsters" && locationEvent.type !== "WEATHER")) {
             modifiers.push({
                 locationId: location.id,
                 startedOn: state.day,
