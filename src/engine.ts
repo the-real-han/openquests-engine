@@ -193,7 +193,7 @@ function maybeSpawnBoss(previousState: GameState, state: GameState, rollDice: Di
             id: `boss_appear_${boss.id}_${state.day}`,
             type: "BOSS_APPEAR",
             day: state.day,
-            location: state.locations[boss.locationId].name,
+            location: monstersLocation?.name ?? '',
             data: { bossName: boss.name, message: boss.messages.appear[state.day % boss.messages.appear.length] }
         })
     }
