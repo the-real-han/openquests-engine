@@ -179,9 +179,11 @@ function maybeSpawnBoss(previousState: GameState, state: GameState, rollDice: Di
     if (rollDice() > 17) {
         const boss = BOSS_RULES[rollDice() % BOSS_RULES.length] // or weighted pick later
 
+        const monstersLocation = Object.values(state.locations).find(l => l.clanId === 'monsters')
+
         state.activeBoss = {
             bossId: boss.id,
-            locationId: boss.locationId,
+            locationId: monstersLocation?.id ?? '',
             appearedOn: state.day,
             expiresOn: state.day + boss.durationDays,
             participants: []
