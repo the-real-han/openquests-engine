@@ -347,22 +347,6 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     const uniqueActions = [...new Map(actions.map(item => [item.playerId, item])).values()];
 
 
-    // process clan daily bonus
-    console.log("Give clan daily bonus")
-    for (const clan of Object.values(nextState.clans)) {
-        if (clan.bonus.wood === undefined && clan.bonus.food === undefined && clan.bonus.gold === undefined) {
-            // black clan, random bonus
-            const res = ["food", "wood", "gold"][rollDice() % 3]
-            clan[res as ClanResource] += 15
-            continue
-        }
-        for (const res of ["food", "wood", "gold"] as const) {
-            const bonus = clan.bonus[res]
-            if (bonus === undefined) continue
-            clan[res] += bonus
-        }
-    }
-
     // 2. Process Actions
     const gatheringActions: Action[] = uniqueActions.filter(action => action.type === 'GATHER');
     const explorationActions: Action[] = uniqueActions.filter(action => action.type === 'EXPLORE');
@@ -640,6 +624,22 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     console.log("looking for new world events")
     // world events
     maybeSpawnLocationModifiers(nextState, rollDice);
+
+    // process clan daily bonus
+    console.log("Give clan daily bonus")
+    for (const clan of Object.values(nextState.clans)) {
+        if (clan.bonus.wood === undefined && clan.bonus.food === undefined && clan.bonus.gold === undefined) {
+            // black clan, random bonus
+            const res = ["food", "wood", "gold"][rollDice() % 3]
+            clan[res as ClanResource] += 15
+            continue
+        }
+        for (const res of ["food", "wood", "gold"] as const) {
+            const bonus = clan.bonus[res]
+            if (bonus === undefined) continue
+            clan[res] += bonus
+        }
+    }
 
     console.log("Update World & Generate Logs")
     // 3. Update World & Generate Logs

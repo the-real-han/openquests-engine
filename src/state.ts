@@ -33,32 +33,32 @@ function getInitialState(): GameState {
     return {
         day: 0,
         locations: {
-            'pinewood_grove': {
-                id: 'pinewood_grove',
+            'pinewood-grove': {
+                id: 'pinewood-grove',
                 name: 'Pinewood Grove',
                 clanId: 'timberkeep',
                 description: 'Home of the Timberkeep.',
             },
-            'goldforge_mine': {
-                id: 'goldforge_mine',
+            'goldforge-mine': {
+                id: 'goldforge-mine',
                 name: 'Goldforge Mine',
                 clanId: 'emberwatch',
                 description: 'Home of the Emberwatch.',
             },
-            'harmony_fields': {
-                id: 'harmony_fields',
+            'harmony-fields': {
+                id: 'harmony-fields',
                 name: 'Harmony Fields',
                 clanId: 'prismveil',
                 description: 'Home of the Prismveil.',
             },
-            'golden_plains': {
-                id: 'golden_plains',
+            'golden-plains': {
+                id: 'golden-plains',
                 name: 'Golden Plains',
                 clanId: 'sunherd',
                 description: 'Home of the Sunherd.',
             },
-            'twilight_pits': {
-                id: 'twilight_pits',
+            'twilight-pits': {
+                id: 'twilight-pits',
                 name: 'Twilight Pits',
                 clanId: 'shardveil',
                 description: 'Home of the Shardveil.',
@@ -79,8 +79,8 @@ function getInitialState(): GameState {
         },
         locationLogs: {},
         clans: {
-            'blue': {
-                id: 'blue_clan',
+            'timberkeep': {
+                id: 'timberkeep',
                 name: 'The Timberkeep',
                 description: 'Timberkeep’s people dwell in forest clearings surrounded by towering pines. They’re builders and wardens—steady as the trunks that shield their homes.',
                 wood: 100,
@@ -91,8 +91,8 @@ function getInitialState(): GameState {
                     wood: 15
                 }
             },
-            'red': {
-                id: 'red_clan',
+            'emberwatch': {
+                id: 'emberwatch',
                 name: 'The Emberwatch',
                 description: 'The miners and smiths of Emberwatch live among glowing forges and dusty tunnels rich with gold. They trade sweat for fortune and see progress in every swing of their hammers.',
                 wood: 100,
@@ -103,8 +103,8 @@ function getInitialState(): GameState {
                 },
                 defeatedBy: null
             },
-            'purple': {
-                id: 'purple_clan',
+            'prismveil': {
+                id: 'prismveil',
                 name: 'The Prismveil',
                 description: 'A gathering of traders and travelers who value balance over greed. Prismveil’s lands hold a little of everything—trees, farms, and gold for trade or craft.',
                 wood: 100,
@@ -117,8 +117,8 @@ function getInitialState(): GameState {
                 },
                 defeatedBy: null
             },
-            'yellow': {
-                id: 'yellow_clan',
+            'sunherd': {
+                id: 'sunherd',
                 name: 'The Sunherd',
                 description: 'Peaceful and hearty, the Sunherd clan tends vast grazing fields where flocks roam freely. Food means life to them, and their bounty feeds all who stand beside them.',
                 wood: 100,
@@ -129,8 +129,8 @@ function getInitialState(): GameState {
                 },
                 defeatedBy: null
             },
-            'black': {
-                id: 'black_clan',
+            'shardveil': {
+                id: 'shardveil',
                 name: 'The Shardveil',
                 description: 'A clan of wanderers drawn to fortune and mystery. Each sunrise brings them a different bounty—some days gold, others wood or food. Chaos is their ally.',
                 wood: 100,
