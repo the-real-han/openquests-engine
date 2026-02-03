@@ -14,7 +14,7 @@ export async function generateWorldSummary(
 
     const prompt = buildWorldPrompt(input);
     const response = await genAI.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-2.5-flash',
         contents: prompt,
     });
 
@@ -33,7 +33,7 @@ export async function generateLocationSummary(
     const prompt = buildLocationPrompt(input);
 
     const result = await genAI.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-2.5-flash',
         contents: prompt,
     });
 
