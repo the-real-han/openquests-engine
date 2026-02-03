@@ -39,13 +39,11 @@ export function parseIssueBody(body: string): ParsedCharacter {
         }
 
         if (currentSection === 'CLASS') {
-            const match = line.match(/- \[[xX]\] (.+)/);
-            if (match && !result.charClass) {
-                const className = match[1].trim();
-                // Validate against allowed classes
+            if (line && !line.startsWith('(') && !line.startsWith('##') && !result.charClass) {
+                const className = line.trim();
                 const validClass = PLAYER_CLASSES.find(c => c === className);
                 if (validClass) {
-                    result.charClass = validClass;
+                    result.charClass = validClass;  // Will set to 'Monk'
                 }
             }
         }
