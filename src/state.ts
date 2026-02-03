@@ -33,40 +33,40 @@ function getInitialState(): GameState {
     return {
         day: 0,
         locations: {
-            'blue_base': {
-                id: 'blue_base',
+            'pinewood_grove': {
+                id: 'pinewood_grove',
                 name: 'Pinewood Grove',
-                clanId: 'blue_clan',
+                clanId: 'timberkeep',
                 description: 'Home of the Timberkeep.',
             },
-            'red_base': {
-                id: 'red_base',
+            'goldforge_mine': {
+                id: 'goldforge_mine',
                 name: 'Goldforge Mine',
-                clanId: 'red_clan',
+                clanId: 'emberwatch',
                 description: 'Home of the Emberwatch.',
             },
-            'purple_base': {
-                id: 'purple_base',
+            'harmony_fields': {
+                id: 'harmony_fields',
                 name: 'Harmony Fields',
-                clanId: 'purple_clan',
+                clanId: 'prismveil',
                 description: 'Home of the Prismveil.',
             },
-            'yellow_base': {
-                id: 'yellow_base',
+            'golden_plains': {
+                id: 'golden_plains',
                 name: 'Golden Plains',
-                clanId: 'yellow_clan',
+                clanId: 'sunherd',
                 description: 'Home of the Sunherd.',
             },
-            'black_base': {
-                id: 'black_base',
+            'twilight_pits': {
+                id: 'twilight_pits',
                 name: 'Twilight Pits',
-                clanId: 'black_clan',
+                clanId: 'shardveil',
                 description: 'Home of the Shardveil.',
             },
-            'monsters_base': {
-                id: 'monsters_base',
+            'wildrift': {
+                id: 'wildrift',
                 name: 'The Wildrift',
-                clanId: 'monsters_clan',
+                clanId: 'monsters',
                 description: 'A rugged no-man’s land crawling with wild beasts and old ruins. Once fertile, now overrun, the Wildrift tempts adventurers with hidden loot and danger alike.',
             }
         },
