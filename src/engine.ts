@@ -649,7 +649,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     if (!nextState.locationLogs) nextState.locationLogs = {};
 
     for (const location of Object.values(nextState.locations)) {
-        await sleep(15000);
+        //await sleep(15000);
         nextState.locationLogs[location.id] = await generateLocationLog(initialState, nextState, location);
     }
 
