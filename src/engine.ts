@@ -340,9 +340,13 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         return Math.max(min, Math.min(max, base + fortune + fortuneMod));
     }
 
+    console.log("Processing previous day")
+
     const uniqueActions = [...new Map(actions.map(item => [item.playerId, item])).values()];
 
+
     // process clan daily bonus
+    console.log("Give clan daily bonus")
     for (const clan of Object.values(nextState.clans)) {
         if (clan.bonus.wood === undefined && clan.bonus.food === undefined && clan.bonus.gold === undefined) {
             // black clan, random bonus
@@ -364,6 +368,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     const attackMonstersActions: Action[] = uniqueActions.filter(action => action.type === 'ATTACK' && action.target === 'monsters_base');
     const waitActions: Action[] = uniqueActions.filter(action => action.type === 'WAIT');
 
+    console.log("Process gathering actions")
     for (const action of gatheringActions) {
         const player = nextState.players[action.playerId];
 
@@ -399,6 +404,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         pushMessage(player, `[+${finalReward} ${action.target}] ${messages[rollDice() % messages.length]}`);
     }
 
+    console.log("Process exploration actions")
     for (const action of explorationActions) {
         const player = nextState.players[action.playerId];
 
@@ -451,6 +457,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     }
 
 
+    console.log("Process attack actions")
     for (const action of attackClanActions) {
         const attacker = nextState.players[action.playerId];
         if (!attacker) continue;
@@ -544,6 +551,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         }
     }
 
+    console.log("Process attack monsters actions")
     for (const action of attackMonstersActions) {
         const player = nextState.players[action.playerId];
         if (!player) continue;
@@ -586,6 +594,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     }
 
 
+    console.log("Process wait actions")
     for (const action of waitActions) {
         const player = nextState.players[action.playerId];
 
@@ -598,6 +607,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     }
 
     // resolve world event
+    console.log("Process world event")
     for (const mod of nextState.locationModifiers ?? []) {
         const clan = nextState.clans[nextState.locations[mod.locationId].clanId]
         if (!clan || clan.defeatedBy || !mod.effects.clanResourceLossPct) continue
@@ -611,21 +621,25 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         }
     }
 
-
+    console.log("Process boss fight")
     // BOSS FIGHT
     resolveBossIfNeeded(nextState);
 
 
+    console.log("Apply titles")
     // Apply Titles (after all actions this tick)
     for (const player of Object.values(nextState.players)) {
         checkAndGrantTitles(player, TITLES as Title[]);
     }
 
+    console.log("looking for new BOSS")
     //BOSS appears 
     maybeSpawnBoss(initialState, nextState, rollDice);
+    console.log("looking for new world events")
     // world events
     maybeSpawnLocationModifiers(nextState, rollDice);
 
+    console.log("Update World & Generate Logs")
     // 3. Update World & Generate Logs
     const worldLog = await generateWorldLog(nextState);
     nextState.worldLog = worldLog;
