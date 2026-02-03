@@ -82,6 +82,8 @@ function resolveAttackClan(
     };
 }
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 const lvBonusCap = 2
 const lvBonusMultiplier = 1.05
 
@@ -647,6 +649,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     if (!nextState.locationLogs) nextState.locationLogs = {};
 
     for (const location of Object.values(nextState.locations)) {
+        await sleep(15000);
         nextState.locationLogs[location.id] = await generateLocationLog(initialState, nextState, location);
     }
 
