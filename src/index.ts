@@ -110,7 +110,7 @@ export async function runTick() {
                         backstory: parsed.backstory || '',
                         level: 1,
                         xp: 0,
-                        clanId: minGroup[0]
+                        clanId: gameState.clans[minGroup[0]].id
                     },
                     status: {
                         alive: true
@@ -151,7 +151,7 @@ export async function runTick() {
                     const minGroup = clans.reduce((min, group) =>
                         group[1] < min[1] ? group : min
                     );
-                    existingPlayer.character.clanId = minGroup[0];
+                    existingPlayer.character.clanId = gameState.clans[minGroup[0]].id;
                     existingPlayer.message = `You have been offered refuge by ${gameState.clans[minGroup[0]].name}.\nDon't forget the past and avenge your clan!`;
                 }
                 console.log(`Processing action for ${issue.user.login} on issue #${issue.number}`);
