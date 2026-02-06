@@ -1,4 +1,4 @@
-import { GameState, LocationLog, LocationModifier, LocationState, Player, WorldLog } from '@openquests/schema';
+import { GameState, LocationHistoryEntry, LocationState, WorldHistoryEntry } from '@openquests/schema';
 import { GoogleGenAI } from '@google/genai';
 
 const apiKey = process.env.GEMINI_API_KEY;
@@ -6,7 +6,7 @@ const apiKey = process.env.GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenAI({ apiKey: apiKey }) : null;
 
 export async function generateWorldSummary(
-    input: WorldNarrationInput
+    input: WorldHistoryEntry
 ): Promise<string> {
     if (!genAI) {
         return "Unable to generate world summary";
@@ -24,7 +24,7 @@ export async function generateWorldSummary(
 }
 
 export async function generateLocationSummary(
-    input: LocationNarrationInput
+    input: LocationHistoryEntry
 ): Promise<string> {
     if (!genAI) {
         return "Unable to generate location summary";
@@ -42,48 +42,7 @@ export async function generateLocationSummary(
     return text.trim();
 }
 
-export type WorldNarrationInput = {
-    day: number
-    population: number
-
-    bossEvents: {
-        name: string
-        location: string
-        status: "APPEARED" | "DEFEATED" | "FAILED"
-        message: string
-    }[]
-
-    locationEvents: {
-        type: "WEATHER" | "INVASION" | "BLESSING" | "CURSE"
-        location: string
-        effects: LocationModifier["effects"]
-        message: string
-    }[]
-
-    miscEvents?: {
-        type: string
-        location?: string
-        message?: string
-    }[]
-}
-
-export type LocationNarrationInput = {
-    day: number
-    location: string
-    clan: string
-
-    events: {
-        type:
-        | "LOCATION_EVENT"
-        | "CLAN_DEFEATED"
-        | "CLAN_CONQUERED"
-        | "RESOURCE_SURGE"
-        data: Record<string, any>
-        message?: string
-    }[]
-}
-
-function buildWorldPrompt(input: WorldNarrationInput): string {
+function buildWorldPrompt(input: WorldHistoryEntry): string {
     return `
 You are a fantasy world narrator for a turn-based strategy RPG.
 
@@ -103,7 +62,7 @@ ${JSON.stringify(input, null, 2)}
 `;
 }
 
-function buildLocationPrompt(input: LocationNarrationInput): string {
+function buildLocationPrompt(input: LocationHistoryEntry): string {
     return `
 You are narrating events at a single location in a fantasy world.
 
@@ -126,15 +85,15 @@ ${JSON.stringify(input, null, 2)}
 
 
 
-export function buildWorldNarrationInput(state: GameState): WorldNarrationInput {
+export function buildWorldNarrationInput(state: GameState): WorldHistoryEntry {
     // --- 1. Population ---
     const population = Object.values(state.players).length
 
-    const currentEvents = state.worldEvents.filter(e => e.day === state.day)
+    const currentEvents = state.activeEvents.filter(e => e.day === state.day)
 
     // --- 2. Boss-related events ---
-    const bossEvents: WorldNarrationInput["bossEvents"] = []
-    const locationEvents: WorldNarrationInput["locationEvents"] = []
+    const bossEvents: WorldHistoryEntry["bossEvents"] = []
+    const locationEvents: WorldHistoryEntry["locationEvents"] = []
 
     for (const e of currentEvents) {
         if (e.id.startsWith("boss_")) {
@@ -168,35 +127,20 @@ export function buildWorldNarrationInput(state: GameState): WorldNarrationInput 
     }
 }
 
-export async function generateWorldLog(state: GameState): Promise<WorldLog> {
-    const narrationInput = buildWorldNarrationInput(state);
-
-    // --- 6. Generate summary (AI later) ---
-    const summary = await generateWorldSummary(narrationInput)
-
-    // --- 7. Return WorldLog ---
-    return {
-        day: state.day,
-        population: narrationInput.population,
-        summary,
-        notes: []
-    }
-}
-
 export function buildLocationNarrationInput(
     previousState: GameState,
     state: GameState,
     location: LocationState
-): LocationNarrationInput {
+): LocationHistoryEntry {
     const clanId = location.clanId
     const prevClan = clanId ? previousState.clans[clanId] : null
     const currClan = clanId ? state.clans[clanId] : null
 
-    const events: LocationNarrationInput["events"] = []
+    const events: LocationHistoryEntry["events"] = []
 
     // --- 1. Active location modifiers ---
     const activeModifiers =
-        state.locationModifiers?.filter(
+        state.activeModifiers?.filter(
             m => m.locationId === location.id
         ) ?? []
 
@@ -272,26 +216,7 @@ export function buildLocationNarrationInput(
         day: state.day,
         location: location.name,
         clan: state.clans[location.clanId]?.name,
-        events
-    }
-}
-
-export async function generateLocationLog(
-    previousState: GameState,
-    state: GameState,
-    location: LocationState
-): Promise<LocationLog> {
-    const narrationInput = buildLocationNarrationInput(previousState, state, location);
-
-    // --- 6. AI narration (stubbed) ---
-    const summary = await generateLocationSummary(narrationInput)
-
-    const population = Object.values(state.players).filter(p => p.character.clanId === location.clanId).length;
-
-    return {
-        day: state.day,
-        summary,
-        notes: [],
-        population
+        events,
+        population: Object.values(state.players).filter(p => p.character.clanId === location.clanId).length
     }
 }

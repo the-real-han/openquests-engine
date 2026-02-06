@@ -10,8 +10,8 @@ vi.mock('../src/story', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../src/story')>();
     return {
         ...actual,
-        generateWorldLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock World", notes: [], population: 0 }),
-        generateLocationLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock Loc", notes: [], population: 0 })
+        generateWorldSummary: vi.fn().mockResolvedValue("Mock World Summary"),
+        generateLocationSummary: vi.fn().mockResolvedValue("Mock Location Summary")
     };
 });
 
@@ -44,7 +44,7 @@ function makePlayer(id: string, clanId: string, charClass: PlayerClass = 'Advent
             backstory: 'A hero'
         },
         message: '',
-        status: { alive: true },
+        history: [],
         meta: {
             joinedDay: 1, lastActionDay: 1,
             gatherFoodCount: 0, gatherWoodCount: 0, gatherGoldCount: 0,
@@ -64,15 +64,14 @@ function makeGameState(): GameState {
     return {
         day: 1,
         locations: {
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base' }
+            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base', history: [] }
         },
         players: { [player1.github.username]: player1 },
-        worldLog: { day: 0, summary: '', population: 0, notes: [] },
-        locationLogs: {},
         clans: { [clanA.id]: clanA },
         activeBoss: null,
-        worldEvents: [],
-        locationModifiers: []
+        activeEvents: [],
+        activeModifiers: [],
+        history: []
     };
 }
 
@@ -102,7 +101,7 @@ describe('Regressions', () => {
             const { newState: s1 } = await processTick(state, [], spawnDice);
 
             expect(s1.activeBoss?.bossId).toBe(boss.id);
-            expect(s1.worldEvents.some(e => e.type === 'BOSS_APPEAR')).toBe(true);
+            expect(s1.activeEvents.some(e => e.type === 'BOSS_APPEAR')).toBe(true);
 
             // Step 2: Participate and Defeat
             // Create 5 Archers (assuming Great Eagle requirements)
@@ -128,7 +127,7 @@ describe('Regressions', () => {
             const { newState: s2 } = await processTick(s1, actions, resolveDice);
 
             expect(s2.activeBoss).toBeNull();
-            expect(s2.worldEvents.some(e => e.type === 'BOSS_DEFEATED')).toBe(true);
+            expect(s2.activeEvents.some(e => e.type === 'BOSS_DEFEATED')).toBe(true);
             expect(s2.players['1'].character.xp).toBeGreaterThan(0);
         });
 
@@ -149,7 +148,7 @@ describe('Regressions', () => {
             const { newState } = await processTick(state, [], dice);
 
             expect(newState.activeBoss).toBeNull();
-            expect(newState.worldEvents.some(e => e.type === 'BOSS_FAILED')).toBe(true);
+            expect(newState.activeEvents.some(e => e.type === 'BOSS_FAILED')).toBe(true);
         });
     });
 

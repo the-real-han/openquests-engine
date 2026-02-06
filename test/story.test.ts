@@ -28,7 +28,7 @@ describe('Story Logic', () => {
     describe('buildWorldNarrationInput', () => {
         test('Includes boss events', () => {
             const state = makeState(5);
-            state.worldEvents = [
+            state.activeEvents = [
                 {
                     id: 'boss_appear_dragon_5', type: 'BOSS_APPEAR', day: 5, location: 'Mountain',
                     data: { bossName: 'Dragon', message: 'Roar' }
@@ -52,7 +52,7 @@ describe('Story Logic', () => {
 
         test('Includes location modifier events', () => {
             const state = makeState(5);
-            state.worldEvents = [{
+            state.activeEvents = [{
                 id: 'locmod_rain_5', type: 'WEATHER', day: 5, location: 'Loc A',
                 data: { effects: { explore: -1 }, message: 'It rains.' }
             } as any];
@@ -75,7 +75,7 @@ describe('Story Logic', () => {
         test('A. Location Event included', () => {
             const prev = makeState(1);
             const state = makeState(2);
-            state.locationModifiers = [{
+            state.activeModifiers = [{
                 id: 'rain', type: 'WEATHER', locationId: 'locA',
                 startedOn: 2, effects: { explore: -1 }, messages: ['Rain falls.']
             }];

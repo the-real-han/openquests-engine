@@ -1,5 +1,5 @@
 import { GameState, Action, TickResult, Player, Clan, LocationModifier, LocationState } from '@openquests/schema';
-import { generateLocationLog, generateWorldLog } from './story';
+import { buildLocationNarrationInput, buildWorldNarrationInput, generateLocationSummary, generateWorldSummary } from './story';
 import EXPLORE_RULES from "./rules/exploring.rules.json";
 import GATHERING_RULES from "./rules/gathering.rules.json";
 import ATTACK_CLAN_RULES from "./rules/attackClan.rules.json";
@@ -189,7 +189,7 @@ function maybeSpawnBoss(previousState: GameState, state: GameState, rollDice: Di
             participants: []
         }
 
-        state.worldEvents.push({
+        state.activeEvents.push({
             id: `boss_appear_${boss.id}_${state.day}`,
             type: "BOSS_APPEAR",
             day: state.day,
@@ -232,7 +232,7 @@ function resolveBossIfNeeded(state: GameState) {
             lvUp(p)
         }
 
-        state.worldEvents.push({
+        state.activeEvents.push({
             id: `boss_defeated_${bossRule.id}_${state.day}`,
             type: "BOSS_DEFEATED",
             day: state.day,
@@ -261,7 +261,7 @@ function resolveBossIfNeeded(state: GameState) {
     active.participants = []
 
     if (state.day >= active.expiresOn) {
-        state.worldEvents.push({
+        state.activeEvents.push({
             id: `boss_failed_${bossRule.id}_${state.day}`,
             type: "BOSS_FAILED",
             day: state.day,
@@ -293,9 +293,9 @@ function maybeSpawnLocationModifiers(
         }
     }
 
-    state.locationModifiers = modifiers
+    state.activeModifiers = modifiers
     for (const modifier of modifiers) {
-        state.worldEvents.push({
+        state.activeEvents.push({
             id: `locmod_${modifier.id}_${state.day}`,
             type: modifier.type,
             day: state.day,
@@ -311,8 +311,8 @@ function getActiveLocationModifier(
     state: GameState,
     location?: LocationState
 ): LocationModifier | null {
-    if (!location || !state.locationModifiers) return null
-    return state.locationModifiers.find(m => m.locationId === location.id) ?? null
+    if (!location || !state.activeModifiers) return null
+    return state.activeModifiers.find(m => m.locationId === location.id) ?? null
 }
 
 function waitMessage(): string {
@@ -596,7 +596,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
 
     // resolve world event
     console.log("Process world event")
-    for (const mod of nextState.locationModifiers ?? []) {
+    for (const mod of nextState.activeModifiers ?? []) {
         const clan = nextState.clans[nextState.locations[mod.locationId].clanId]
         if (!clan || clan.defeatedBy || !mod.effects.clanResourceLossPct) continue
 
@@ -643,17 +643,36 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         }
     }
 
-    console.log("Update World & Generate Logs")
-    // 3. Update World & Generate Logs
-    const worldLog = await generateWorldLog(nextState);
-    nextState.worldLog = worldLog;
+    console.log("Update history")
+    for (const player of Object.values(nextState.players)) {
+        const action = actions.find(a => a.playerId === player.playerId.toString()) ?? null;
+        player.history.push({
+            day: nextState.day,
+            action: action ? {
+                type: action.type,
+                target: action.target ?? ""
+            } : undefined,
+            summary: player.message
+        })
+        if (player.history.length > 10) {
+            player.history.shift();
+        }
+    }
 
-    if (!nextState.locationLogs) nextState.locationLogs = {};
+    // 3. Update World & Generate Logs
+    const worldHistoryEntry = buildWorldNarrationInput(nextState);
+    const worldNarration = await generateWorldSummary(worldHistoryEntry);
+    worldHistoryEntry.summary = worldNarration;
+    nextState.history.push(worldHistoryEntry);
 
     for (const location of Object.values(nextState.locations)) {
-        //await sleep(15000);
-        nextState.locationLogs[location.id] = await generateLocationLog(initialState, nextState, location);
+        await sleep(20000);  // Commented out for tests - uncomment for production rate limiting
+        const locationHistoryEntry = buildLocationNarrationInput(initialState, nextState, location);
+        const locationNarration = await generateLocationSummary(locationHistoryEntry);
+        locationHistoryEntry.summary = locationNarration;
+        location.history.push(locationHistoryEntry);
     }
+
 
     // 4. Generate Narrative
     const narrativeSummary = `Day ${nextState.day} has ended.`;

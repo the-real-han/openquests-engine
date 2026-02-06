@@ -1,12 +1,10 @@
 import * as core from '@actions/core';
-import * as github from '@actions/github';
 import { loadState, saveState } from './state';
 import { processTick } from './engine';
 import { Action, Clan, Player } from '@openquests/schema';
 import { GameInputs, MockAdapter, GitHubAdapter } from './github_adapter';
 import { parseAction } from './actions';
 import { parseIssueBody } from './parser';
-import { generateWorldLog } from './story';
 
 export async function runTick() {
     try {
@@ -112,9 +110,6 @@ export async function runTick() {
                         xp: 0,
                         clanId: gameState.clans[minGroup[0]].id
                     },
-                    status: {
-                        alive: true
-                    },
                     meta: {
                         joinedDay: gameState.day,
                         lastActionDay: gameState.day,
@@ -135,10 +130,10 @@ export async function runTick() {
                         attackLoseStreak: 0,
                         attackedCount: 0
                     },
+                    history: [],
                     message: `Welcome, ${name} the ${charClass}, to ${gameState.clans[minGroup[0]].name}.\nLet's conquer the world together!`
                 };
 
-                // Persist to State
                 gameState.players[playerId] = newPlayer;
                 minGroup[1]++;
 

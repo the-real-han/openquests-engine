@@ -15,7 +15,6 @@ export function loadState(baseDir: string): GameState {
         const data = fs.readFileSync(filePath, 'utf-8');
         const state = JSON.parse(data) as GameState;
         if (!state.players) state.players = {};
-        if (!state.locationLogs) state.locationLogs = {};
         return state;
     } catch (error) {
         console.error('Failed to parse state file:', error);
@@ -38,46 +37,45 @@ function getInitialState(): GameState {
                 name: 'Pinewood Grove',
                 clanId: 'timberkeep',
                 description: 'Home of the Timberkeep.',
+                history: []
             },
             'goldforge-mine': {
                 id: 'goldforge-mine',
                 name: 'Goldforge Mine',
                 clanId: 'emberwatch',
                 description: 'Home of the Emberwatch.',
+                history: []
             },
             'harmony-fields': {
                 id: 'harmony-fields',
                 name: 'Harmony Fields',
                 clanId: 'prismveil',
                 description: 'Home of the Prismveil.',
+                history: []
             },
             'golden-plains': {
                 id: 'golden-plains',
                 name: 'Golden Plains',
                 clanId: 'sunherd',
                 description: 'Home of the Sunherd.',
+                history: []
             },
             'twilight-pits': {
                 id: 'twilight-pits',
                 name: 'Twilight Pits',
                 clanId: 'shardveil',
                 description: 'Home of the Shardveil.',
+                history: []
             },
             'wildrift': {
                 id: 'wildrift',
                 name: 'The Wildrift',
                 clanId: 'monsters',
                 description: 'A rugged no-man’s land crawling with wild beasts and old ruins. Once fertile, now overrun, the Wildrift tempts adventurers with hidden loot and danger alike.',
+                history: []
             }
         },
         players: {},
-        worldLog: {
-            day: 0,
-            summary: 'The world stirs as adventurers continue their journeys.',
-            population: 0,
-            notes: []
-        },
-        locationLogs: {},
         clans: {
             'timberkeep': {
                 id: 'timberkeep',
@@ -141,6 +139,9 @@ function getInitialState(): GameState {
                 defeatedBy: null
             }
         },
-        worldEvents: []
+        activeEvents: [],
+        activeModifiers: [],
+        activeBoss: null,
+        history: []
     };
 }

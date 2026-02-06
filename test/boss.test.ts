@@ -9,8 +9,8 @@ vi.mock('../src/story', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../src/story')>();
     return {
         ...actual,
-        generateWorldLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock World", notes: [], population: 0 }),
-        generateLocationLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock Loc", notes: [], population: 0 })
+        generateWorldSummary: vi.fn().mockResolvedValue("Mock World Summary"),
+        generateLocationSummary: vi.fn().mockResolvedValue("Mock Location Summary")
     };
 });
 
@@ -47,7 +47,7 @@ function makePlayer(id: string, clanId: string, charClass: PlayerClass = 'Advent
             backstory: 'A hero'
         },
         message: '',
-        status: { alive: true },
+        history: [],
         meta: {
             joinedDay: 1, lastActionDay: 1,
             gatherFoodCount: 0, gatherWoodCount: 0, gatherGoldCount: 0,
@@ -67,19 +67,19 @@ function makeGameState(): GameState {
     return {
         day: 1,
         locations: {
-            'locA': { id: 'locA', description: 'Desc A', clanId: 'clanA', name: 'Location A' },
-            'locB': { id: 'locB', description: 'Desc B', clanId: 'clanB', name: 'Location B' },
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base' }
+            'locA': { id: 'locA', description: 'Desc A', clanId: 'clanA', name: 'Location A', history: [] },
+            'locB': { id: 'locB', description: 'Desc B', clanId: 'clanB', name: 'Location B', history: [] },
+            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base', history: [] },
+            'wildrift': { id: 'wildrift', description: 'The Wildrift', clanId: 'monsters', name: 'The Wildrift', history: [] }
         },
         players: { [player1.github.username]: player1 },
-        worldLog: { day: 0, summary: '', population: 0, notes: [] },
-        locationLogs: {},
         clans: {
             [clanA.id]: clanA
         },
         activeBoss: null,
-        worldEvents: [],
-        locationModifiers: []
+        activeEvents: [],
+        activeModifiers: [],
+        history: []
     };
 }
 
@@ -118,7 +118,7 @@ describe('Boss Mechanics', () => {
             const dice = createDeterministicDice([20, 0]);
 
             const { newState } = await processTick(state, [], dice);
-            const event = newState.worldEvents.find(e => e.type === 'BOSS_APPEAR');
+            const event = newState.activeEvents.find(e => e.type === 'BOSS_APPEAR');
 
             expect(event).toBeDefined();
             expect(event?.data?.bossName).toBe(BOSS_RULES[0].name);
@@ -141,7 +141,7 @@ describe('Boss Mechanics', () => {
             // Should still be the old boss
             expect(newState.activeBoss?.bossId).toBe(BOSS_RULES[0].id);
             // Should not emit new BOSS_APPEAR
-            const validEvents = newState.worldEvents.filter(e => e.type === 'BOSS_APPEAR');
+            const validEvents = newState.activeEvents.filter(e => e.type === 'BOSS_APPEAR');
             expect(validEvents.length).toBe(0);
         });
 
@@ -262,7 +262,7 @@ describe('Boss Mechanics', () => {
             expect(newState.activeBoss).toBeNull();
 
             // Check events
-            const event = newState.worldEvents.find(e => e.type === 'BOSS_DEFEATED');
+            const event = newState.activeEvents.find(e => e.type === 'BOSS_DEFEATED');
             expect(event).toBeDefined();
             expect(event?.data?.bossName).toBe(boss.name);
 
@@ -308,7 +308,7 @@ describe('Boss Mechanics', () => {
             const { newState } = await processTick(state, [], dice);
 
             expect(newState.activeBoss).toBeNull();
-            expect(newState.worldEvents.some(e => e.type === 'BOSS_FAILED')).toBe(true);
+            expect(newState.activeEvents.some(e => e.type === 'BOSS_FAILED')).toBe(true);
 
             // Player still gets failure XP for that day's attempt
             expect(newState.players['1'].character.xp).toBeGreaterThan(0);
@@ -332,7 +332,7 @@ describe('Boss Mechanics', () => {
             const { newState } = await processTick(state, [], dice);
 
             expect(newState.activeBoss).not.toBeNull();
-            expect(newState.worldEvents.some(e => e.type === 'BOSS_FAILED')).toBe(false);
+            expect(newState.activeEvents.some(e => e.type === 'BOSS_FAILED')).toBe(false);
         });
     });
 });

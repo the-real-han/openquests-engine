@@ -9,8 +9,8 @@ vi.mock('../src/story', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../src/story')>();
     return {
         ...actual,
-        generateWorldLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock World", notes: [], population: 0 }),
-        generateLocationLog: vi.fn().mockResolvedValue({ day: 1, summary: "Mock Loc", notes: [], population: 0 })
+        generateWorldSummary: vi.fn().mockResolvedValue("Mock World Summary"),
+        generateLocationSummary: vi.fn().mockResolvedValue("Mock Location Summary")
     };
 });
 
@@ -43,7 +43,7 @@ function makePlayer(id: string, clanId: string, charClass: PlayerClass = 'Advent
             backstory: 'A hero'
         },
         message: '',
-        status: { alive: true },
+        history: [],
         meta: {
             joinedDay: 1, lastActionDay: 1,
             gatherFoodCount: 0, gatherWoodCount: 0, gatherGoldCount: 0,
@@ -63,17 +63,16 @@ function makeGameState(): GameState {
     return {
         day: 1,
         locations: {
-            'locA': { id: 'locA', description: 'Location A', clanId: 'clanA', name: 'Location A' },
-            'locB': { id: 'locB', description: 'Location B', clanId: 'clanB', name: 'Location B' },
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base' }
+            'locA': { id: 'locA', description: 'Location A', clanId: 'clanA', name: 'Location A', history: [] },
+            'locB': { id: 'locB', description: 'Location B', clanId: 'clanB', name: 'Location B', history: [] },
+            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base', history: [] }
         },
         players: { [player1.github.username]: player1 },
-        worldLog: { day: 0, summary: '', population: 0, notes: [] },
-        locationLogs: {},
         clans: { [clanA.id]: clanA },
         activeBoss: null,
-        worldEvents: [],
-        locationModifiers: []
+        activeEvents: [],
+        activeModifiers: [],
+        history: []
     };
 }
 
@@ -103,11 +102,11 @@ describe('Location Events & Modifiers', () => {
 
             const { newState } = await processTick(state, [], dice);
 
-            expect(newState.locationModifiers).toBeDefined();
-            expect(newState.locationModifiers?.length).toBe(1);
-            expect(newState.locationModifiers?.[0].locationId).toBe('locA');
-            expect(newState.locationModifiers?.[0].id).toBe('weather_heavy_rain');
-            expect(newState.worldEvents.find(e => e.type === 'WEATHER')).toBeDefined();
+            expect(newState.activeModifiers).toBeDefined();
+            expect(newState.activeModifiers?.length).toBe(1);
+            expect(newState.activeModifiers?.[0].locationId).toBe('locA');
+            expect(newState.activeModifiers?.[0].id).toBe('weather_heavy_rain');
+            expect(newState.activeEvents.find(e => e.type === 'WEATHER')).toBeDefined();
         });
 
         test('Does not spawn modifier when roll >= 4', async () => {
@@ -116,12 +115,12 @@ describe('Location Events & Modifiers', () => {
             const dice = createDeterministicDice([1, 4]);
 
             const { newState } = await processTick(state, [], dice);
-            expect(newState.locationModifiers?.length).toBe(0);
+            expect(newState.activeModifiers?.length).toBe(0);
         });
 
         test('Modifiers are cleared/replaced next tick', async () => {
             const state = makeGameState();
-            state.locationModifiers = [{
+            state.activeModifiers = [{
                 id: 'old_mod',
                 type: 'WEATHER',
                 locationId: 'locA',
@@ -134,7 +133,7 @@ describe('Location Events & Modifiers', () => {
             const dice = createDeterministicDice([1, 4]);
             const { newState } = await processTick(state, [], dice);
 
-            expect(newState.locationModifiers).toHaveLength(0);
+            expect(newState.activeModifiers).toHaveLength(0);
         });
     });
 
@@ -143,7 +142,7 @@ describe('Location Events & Modifiers', () => {
             const state = makeGameState();
             // Set up Goblin Raid manually to match new rules
             // Goblin Raid: Gold 10%, Wood 10%
-            state.locationModifiers = [{
+            state.activeModifiers = [{
                 id: 'invasion_goblin_raid',
                 type: 'INVASION',
                 locationId: 'locA',
@@ -172,7 +171,7 @@ describe('Location Events & Modifiers', () => {
 
         test('Resource loss does not drop below 0', async () => {
             const state = makeGameState();
-            state.locationModifiers = [{
+            state.activeModifiers = [{
                 id: 'invasion_heavy',
                 type: 'INVASION',
                 locationId: 'locA',
@@ -195,7 +194,7 @@ describe('Location Events & Modifiers', () => {
 
         test('Defeated clan ignores resource loss', async () => {
             const state = makeGameState();
-            state.locationModifiers = [{
+            state.activeModifiers = [{
                 id: 'invasion_goblin_raid',
                 type: 'INVASION',
                 locationId: 'locA',
@@ -220,7 +219,7 @@ describe('Location Events & Modifiers', () => {
             // Monster Base has Blessing (+2 Fortune)
             // Logic: dice - fortuneMod. 
             // So roll should be REDUCED by 2.
-            state.locationModifiers = [{
+            state.activeModifiers = [{
                 id: 'blessing_fortune',
                 type: 'BLESSING',
                 locationId: 'monsters_base',
@@ -262,7 +261,7 @@ describe('Location Events & Modifiers', () => {
             state.clans['clanA'].defeatedBy = null;
             state.locations['locA'].clanId = 'clanA';
 
-            state.locationModifiers = [
+            state.activeModifiers = [
                 {
                     id: 'ignored_home', type: 'BLESSING', locationId: 'locA', startedOn: 1,
                     effects: { explore: 10, fortune: 10 }, messages: []

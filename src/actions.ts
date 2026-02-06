@@ -1,8 +1,7 @@
 import { Action } from '@openquests/schema';
 
-export const VALID_ACTIONS = ['GATHER', 'EXPLORE', 'ATTACK', 'WAIT'] as const;
 export const VALID_RESOURCES = ['food', 'wood', 'gold'];
-export const VALID_TARGETS = ['blue_base', 'red_base', 'purple_base', 'yellow_base', 'black_base', 'monsters_base'];
+export const VALID_TARGETS = ['pinewood-grove', 'goldforge-mine', 'harmony-fields', 'golden-plains', 'twilight-pits', 'wildrift'];
 
 export function parseAction(playerId: string, commentBody: string): Action {
     // Normalize input

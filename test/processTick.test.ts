@@ -8,18 +8,8 @@ vi.mock('../src/story', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../src/story')>();
     return {
         ...actual,
-        generateWorldLog: vi.fn().mockImplementation(async (state) => ({
-            day: state.day,
-            summary: "Mock World",
-            notes: [],
-            population: Object.keys(state.players).length
-        })),
-        generateLocationLog: vi.fn().mockImplementation(async (prev, state, loc) => ({
-            day: state.day,
-            summary: "Mock Loc",
-            notes: [],
-            population: Object.values(state.players).filter((p: any) => p.character.clanId === loc.clanId).length
-        }))
+        generateWorldSummary: vi.fn().mockResolvedValue("Mock World Summary"),
+        generateLocationSummary: vi.fn().mockResolvedValue("Mock Location Summary")
     };
 });
 
@@ -56,7 +46,7 @@ function makePlayer(id: string, clanId: string, charClass: PlayerClass = 'Advent
             backstory: 'A hero'
         },
         message: '',
-        status: { alive: true },
+        history: [],
         meta: {
             joinedDay: 1, lastActionDay: 1,
             gatherFoodCount: 0, gatherWoodCount: 0, gatherGoldCount: 0,
@@ -77,18 +67,19 @@ function makeGameState(): GameState {
     return {
         day: 1,
         locations: {
-            'locA': { id: 'locA', description: 'Desc A', clanId: 'clanA', name: 'Loc A' },
-            'locB': { id: 'locB', description: 'Desc B', clanId: 'clanB', name: 'Loc B' },
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monsters Base' }
+            'locA': { id: 'locA', description: 'Desc A', clanId: 'clanA', name: 'Loc A', history: [] },
+            'locB': { id: 'locB', description: 'Desc B', clanId: 'clanB', name: 'Loc B', history: [] },
+            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monsters Base', history: [] }
         },
         players: { [player1.github.username]: player1 },
-        worldLog: { day: 0, summary: '', population: 0, notes: [] },
-        locationLogs: {},
         clans: {
             [clanA.id]: clanA,
             [clanB.id]: clanB
         },
-        worldEvents: []
+        activeEvents: [],
+        activeBoss: null,
+        activeModifiers: [],
+        history: []
     };
 }
 
@@ -568,14 +559,14 @@ describe('processTick', () => {
 
             const { newState } = await processTick(state, []);
 
-            expect(newState.worldLog.day).toBe(2);
+            expect(newState.history[newState.history.length - 1].day).toBe(2);
 
             // Loc A should have population 2 (p1 and p2 both clanA)
-            const locALog = newState.locationLogs['locA'];
+            const locALog = newState.locations['locA'].history[newState.locations['locA'].history.length - 1];
             expect(locALog.population).toBe(2);
 
             // Loc B (clanB) -> 0 players
-            const locBLog = newState.locationLogs['locB'];
+            const locBLog = newState.locations['locB'].history[newState.locations['locB'].history.length - 1];
             expect(locBLog.population).toBe(0);
         });
     });
@@ -805,8 +796,8 @@ describe('World / Location Logs Extended', () => {
 
         const { newState } = await processTick(state, []);
 
-        const locALog = newState.locationLogs['locA'];
-        const locBLog = newState.locationLogs['locB'];
+        const locALog = newState.locations['locA'].history[newState.locations['locA'].history.length - 1];
+        const locBLog = newState.locations['locB'].history[newState.locations['locB'].history.length - 1];
 
         // Both should report 2 players (p1, p2 both Clan A).
         expect(locALog.population).toBe(2);
