@@ -643,7 +643,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         }
     }
 
-    console.log("Update history")
+    console.log("Update player history")
     for (const player of Object.values(nextState.players)) {
         const action = actions.find(a => a.playerId === player.playerId.toString()) ?? null;
         if (!player.history) player.history = [];
@@ -660,13 +660,14 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         }
     }
 
-    // 3. Update World & Generate Logs
+    console.log("Update world history")
     const worldHistoryEntry = buildWorldNarrationInput(nextState);
     const worldNarration = await generateWorldSummary(worldHistoryEntry);
     worldHistoryEntry.summary = worldNarration;
     if (!nextState.history) nextState.history = [];
     nextState.history.push(worldHistoryEntry);
 
+    console.log("Update location history")
     for (const location of Object.values(nextState.locations)) {
         await sleep(20000);  // Commented out for tests - uncomment for production rate limiting
         const locationHistoryEntry = buildLocationNarrationInput(initialState, nextState, location);

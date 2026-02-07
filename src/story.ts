@@ -89,7 +89,7 @@ export function buildWorldNarrationInput(state: GameState): WorldHistoryEntry {
     // --- 1. Population ---
     const population = Object.values(state.players).length
 
-    const currentEvents = state.activeEvents.filter(e => e.day === state.day)
+    const currentEvents = (state.activeEvents ?? []).filter(e => e.day === state.day)
 
     // --- 2. Boss-related events ---
     const bossEvents: WorldHistoryEntry["bossEvents"] = []
@@ -140,7 +140,7 @@ export function buildLocationNarrationInput(
 
     // --- 1. Active location modifiers ---
     const activeModifiers =
-        state.activeModifiers?.filter(
+        (state.activeModifiers ?? []).filter(
             m => m.locationId === location.id
         ) ?? []
 
