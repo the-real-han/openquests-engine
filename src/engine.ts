@@ -327,7 +327,6 @@ export async function processTick(initialState: GameState, actions: Action[], ro
 
     // Deep copy state to ensure immutability during processing
     const nextState = JSON.parse(JSON.stringify(initialState)) as GameState;
-    nextState.day += 1;
 
     const rollWithFortune = function (
         rollDice: () => number,
@@ -680,6 +679,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
 
     // 4. Generate Narrative
     const narrativeSummary = `Day ${nextState.day} has ended.`;
+    nextState.day += 1;
 
     return {
         newState: nextState,
