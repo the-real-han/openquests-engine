@@ -646,6 +646,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     console.log("Update history")
     for (const player of Object.values(nextState.players)) {
         const action = actions.find(a => a.playerId === player.playerId.toString()) ?? null;
+        if (!player.history) player.history = [];
         player.history.push({
             day: nextState.day,
             action: action ? {
@@ -663,6 +664,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     const worldHistoryEntry = buildWorldNarrationInput(nextState);
     const worldNarration = await generateWorldSummary(worldHistoryEntry);
     worldHistoryEntry.summary = worldNarration;
+    if (!nextState.history) nextState.history = [];
     nextState.history.push(worldHistoryEntry);
 
     for (const location of Object.values(nextState.locations)) {
@@ -670,6 +672,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         const locationHistoryEntry = buildLocationNarrationInput(initialState, nextState, location);
         const locationNarration = await generateLocationSummary(locationHistoryEntry);
         locationHistoryEntry.summary = locationNarration;
+        if (!location.history) location.history = [];
         location.history.push(locationHistoryEntry);
     }
 
