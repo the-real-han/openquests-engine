@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 const apiKey = process.env.GEMINI_API_KEY;
 
 const genAI = apiKey ? new GoogleGenAI({ apiKey: apiKey }) : null;
+const models = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"];
 
 export async function generateWorldSummary(
     input: WorldHistoryEntry
@@ -13,14 +14,25 @@ export async function generateWorldSummary(
     }
 
     const prompt = buildWorldPrompt(input);
-    const response = await genAI.models.generateContent({
-        model: 'gemini-2.5-flash-lite',
-        contents: prompt,
-    });
 
-    const text = response.text ?? "";
-    console.log(text)
-    return text.trim();
+    for (const model of models) {
+        try {
+            const response = await genAI.models.generateContent({
+                model: model,
+                contents: prompt,
+            });
+
+            const text = response.text ?? "";
+            if (text) {
+                console.log(text);
+                return text.trim();
+            }
+        } catch (error) {
+            console.error(`Failed to generate world summary with model ${model}:`, error);
+        }
+    }
+
+    return "Unable to generate world summary";
 }
 
 export async function generateLocationSummary(
@@ -32,14 +44,24 @@ export async function generateLocationSummary(
 
     const prompt = buildLocationPrompt(input);
 
-    const result = await genAI.models.generateContent({
-        model: 'gemini-2.5-flash-lite',
-        contents: prompt,
-    });
+    for (const model of models) {
+        try {
+            const result = await genAI.models.generateContent({
+                model: model,
+                contents: prompt,
+            });
 
-    const text = result.text ?? "";
-    console.log(text)
-    return text.trim();
+            const text = result.text ?? "";
+            if (text) {
+                console.log(text);
+                return text.trim();
+            }
+        } catch (error) {
+            console.error(`Failed to generate location summary with model ${model}:`, error);
+        }
+    }
+
+    return "Unable to generate location summary";
 }
 
 function buildWorldPrompt(input: WorldHistoryEntry): string {
