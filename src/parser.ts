@@ -41,7 +41,7 @@ export function parseIssueBody(body: string): ParsedCharacter {
         if (currentSection === 'CLASS') {
             if (line && !line.startsWith('(') && !line.startsWith('##') && !result.charClass) {
                 const className = line.trim();
-                const validClass = PLAYER_CLASSES.find(c => c === className);
+                const validClass = PLAYER_CLASSES.find(c => c.toLowerCase() === className.toLowerCase());
                 if (validClass) {
                     result.charClass = validClass;
                 }

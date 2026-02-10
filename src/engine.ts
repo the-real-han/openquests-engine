@@ -1,9 +1,9 @@
-import { GameState, Action, TickResult, Player, Clan, LocationModifier, LocationState, PlayerClass } from '@openquests/schema';
+import { GameState, Action, TickResult, Player, LocationModifier, LocationState, PlayerClass, Title } from '@openquests/schema';
 import { buildLocationNarrationInput, buildWorldNarrationInput, generateLocationSummary, generateWorldSummary } from './story';
 import EXPLORE_RULES from "./rules/exploring.rules.json";
 import GATHERING_RULES from "./rules/gathering.rules.json";
 import ATTACK_CLAN_RULES from "./rules/attackClan.rules.json";
-import { AttackClanResolutionRule, Boss, ExploreRuleSet, GatheringRuleSet, LocationEvent, ResolutionRule, Title } from './rules/types';
+import { AttackClanResolutionRule, ExploreRuleSet, GatheringRuleSet, LocationEvent, ResolutionRule } from './rules/types';
 import ATTACK_MONSTER_RULES from "./rules/attackMonster.rules.json";
 import TITLES from "./rules/title.rules.json";
 import BOSS_RULES from "./rules/boss.rules.json";
@@ -153,20 +153,20 @@ function compare(a: number, op: string, b: number) {
 
 function checkAndGrantTitles(player: Player, titles: Title[]) {
     for (const t of titles) {
-        if (player.character.titles.includes(t.id)) continue;
+        if (player.character.titles.find(title => title.id === t.id)) continue;
 
         const current = getFieldValue(player, t.requirement.field);
 
         if (compare(current, t.requirement.operator, t.requirement.value)) {
-            player.character.titles.push(t.id);
+            player.character.titles.push(t);
             pushMessage(player, `[TITLE UNLOCKED: ${t.title}]`);
         }
     }
 }
 
 function getTitleBonus(player: Player, bonusType: 'food' | 'wood' | 'gold' | 'xp' | 'fortune') {
-    const titleBonusTotal = player.character.titles.reduce((sum, titleId) => {
-        const t = (TITLES as Title[]).find(t => t.id === titleId);
+    const titleBonusTotal = player.character.titles.reduce((sum, title) => {
+        const t = (TITLES as Title[]).find(t => t.id === title.id);
         return sum + (t?.bonus?.[bonusType] || 0);
     }, 0);
     return Math.min(3, titleBonusTotal);

@@ -62,23 +62,6 @@ export type AttackMonsterRuleSet = {
     rules: AttackMonsterRule[]
 }
 
-export type Title = {
-    id: string,
-    title: string,
-    requirement: {
-        field: string,
-        operator: string,
-        value: number
-    },
-    bonus: {
-        food: number,
-        wood: number,
-        gold: number,
-        xp: number,
-        fortune: number
-    }
-}
-
 export type Boss = {
     id: string,
     name: string,
