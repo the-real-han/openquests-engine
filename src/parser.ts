@@ -1,4 +1,4 @@
-import { GameState, Player, Action, PlayerClass, PLAYER_CLASSES } from '@openquests/schema';
+import { GameState, Player, Action, PlayerClass, PLAYER_CLASSES, PLAYER_NAME_MAX_LENGTH, PLAYER_BACKSTORY_MAX_LENGTH, PLAYER_NAME_MIN_LENGTH } from '@openquests/schema';
 
 interface ParsedCharacter {
     name?: string;
@@ -34,7 +34,7 @@ export function parseIssueBody(body: string): ParsedCharacter {
         // Parse Content based on section
         if (currentSection === 'NAME') {
             if (line && !line.startsWith('(') && !line.startsWith('##')) {
-                result.name = line;
+                result.name = line.trim().slice(0, PLAYER_NAME_MAX_LENGTH);
             }
         }
 
@@ -43,7 +43,7 @@ export function parseIssueBody(body: string): ParsedCharacter {
                 const className = line.trim();
                 const validClass = PLAYER_CLASSES.find(c => c === className);
                 if (validClass) {
-                    result.charClass = validClass;  // Will set to 'Monk'
+                    result.charClass = validClass;
                 }
             }
         }
@@ -56,7 +56,7 @@ export function parseIssueBody(body: string): ParsedCharacter {
     }
 
     if (result.backstory) {
-        result.backstory = result.backstory.trim();
+        result.backstory = result.backstory.trim().slice(0, PLAYER_BACKSTORY_MAX_LENGTH);
     }
 
     return result;
