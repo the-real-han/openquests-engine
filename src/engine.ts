@@ -1,4 +1,4 @@
-import { GameState, Action, TickResult, Player, Clan, LocationModifier, LocationState } from '@openquests/schema';
+import { GameState, Action, TickResult, Player, Clan, LocationModifier, LocationState, PlayerClass } from '@openquests/schema';
 import { buildLocationNarrationInput, buildWorldNarrationInput, generateLocationSummary, generateWorldSummary } from './story';
 import EXPLORE_RULES from "./rules/exploring.rules.json";
 import GATHERING_RULES from "./rules/gathering.rules.json";
@@ -457,7 +457,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         }
 
         const defenderClan = nextState.clans[targetLocation.clanId];
-        if (!defenderClan || defenderClan.food <= 0) {
+        if (!defenderClan || defenderClan.defeatedBy || defenderClan.food <= 0) {
             pushMessage(attacker, "The clan you sought has already fallen.");
             continue;
         }
@@ -478,12 +478,47 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         const defenders = Object.values(nextState.players).filter(
             p => p.character.clanId === defenderClan.id
         );
-        if (!defenders.length) {
-            pushMessage(attacker, "You found no defenders — only ruins.");
-            continue;
-        }
 
-        const defender = defenders[rollDice() % defenders.length];
+        // random defender or sandbag if no defenders
+        const defender = defenders.length ? defenders[rollDice() % defenders.length] : {
+            playerId: -1,
+            github: {
+                username: "Sandbag",
+                issueNumber: -1,
+                userId: -1,
+            },
+            character: {
+                clanId: defenderClan.id,
+                class: "Adventurer" as PlayerClass,
+                level: 1,
+                xp: 0,
+                name: "Sandbag",
+                titles: [],
+                backstory: ""
+            },
+            message: "You feel ready for adventure!",
+            history: [],
+            meta: {
+                joinedDay: 1,
+                lastActionDay: 1,
+                gatherFoodCount: 0,
+                gatherWoodCount: 0,
+                gatherGoldCount: 0,
+                food: 0,
+                wood: 0,
+                gold: 0,
+                exploreCount: 0,
+                attackCount: 0,
+                playerWins: 0,
+                playerLosses: 0,
+                monsterKilled: 0,
+                bossKilled: 0,
+                monsterEncountered: 0,
+                attackWinStreak: 0,
+                attackLoseStreak: 0,
+                attackedCount: 0,
+            }
+        }
 
         const result = resolveAttackClan(
             attacker,
