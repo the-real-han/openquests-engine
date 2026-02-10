@@ -703,7 +703,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
 
     console.log("Update location history")
     for (const location of Object.values(nextState.locations)) {
-        //await sleep(20000);  // Commented out for tests - uncomment for production rate limiting
+        await sleep(20000);  // Commented out for tests - uncomment for production rate limiting
         const locationHistoryEntry = buildLocationNarrationInput(initialState, nextState, location);
         const locationNarration = await generateLocationSummary(locationHistoryEntry);
         locationHistoryEntry.summary = locationNarration;
