@@ -559,7 +559,7 @@ describe('processTick', () => {
 
             const { newState } = await processTick(state, []);
 
-            expect(newState.history[newState.history.length - 1].day).toBe(2);
+            expect(newState.history[newState.history.length - 1].day).toBe(1);
 
             // Loc A should have population 2 (p1 and p2 both clanA)
             const locALog = newState.locations['locA'].history[newState.locations['locA'].history.length - 1];

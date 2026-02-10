@@ -140,7 +140,7 @@ describe('Regressions', () => {
                 expiresOn: 2, // Expires on Day 2
                 participants: []
             };
-            state.day = 1; // -> 2 in tick
+            state.day = 2; // Tick happens on Day 2, check expiration before increment to 3
 
             // Dice: Boss(1), LocMod(4)
             const dice = createDeterministicDice([0, 1, 4]); // 0 for boss fail msg

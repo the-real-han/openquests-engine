@@ -110,7 +110,7 @@ describe('Boss Mechanics', () => {
             // Should spawn Iron Behemoth
             expect(newState.activeBoss).toBeDefined();
             expect(newState.activeBoss?.bossId).toBe(BOSS_RULES[0].id);
-            expect(newState.activeBoss?.appearedOn).toBe(2); // Day 1 -> 2
+            expect(newState.activeBoss?.appearedOn).toBe(1); // Day 1, appeared during tick before increment
         });
 
         test('Emits BOSS_APPEAR event', async () => {
@@ -291,7 +291,7 @@ describe('Boss Mechanics', () => {
                 expiresOn: 2, // Expires on Day 2
                 participants: [1]
             };
-            state.day = 1; // Will become 2 in processTick
+            state.day = 2; // Tick happens on Day 2, check expiration before increment to 3
 
             // processTick:
             // 1. Advance Day -> 2.
