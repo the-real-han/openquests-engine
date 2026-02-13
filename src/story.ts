@@ -75,7 +75,7 @@ Length: 2–4 sentences.
 Rules:
 - Do NOT invent events.
 - Only describe what appears in the input.
-- If no events occurred, describe a calm or uneventful day.
+- If no events occurred, describe a calm day or give an inspiring message.
 - Do NOT mention numbers unless provided.
 - Do NOT mention players directly.
 
@@ -91,14 +91,16 @@ You are narrating events at a single location in a fantasy world.
 Location: ${input.location}
 Day: ${input.day}
 
-Write 2–3 sentences describing what happened here.
+Write 2–4 sentences describing what happened here.
 
 Rules:
 - Only describe events listed below.
 - If a clan was defeated or conquered, that is the most important event.
-- If resources increased, mention only the largest gain.
+- If a boss appeared or was defeated, that is an important event.
+- If resources increased, mention only the largest gained resource but do not mention the number.
 - Do NOT mention population.
-- Do NOT invent battles, weather, or characters.
+- Do NOT invent battles, characters.
+- If nothing important happened, describe a calm day or give an inspiring message for clan members.
 
 Location Events (JSON):
 ${JSON.stringify(input, null, 2)}
@@ -159,8 +161,23 @@ export function buildLocationNarrationInput(
     const currClan = clanId ? state.clans[clanId] : null
 
     const events: LocationHistoryEntry["events"] = []
+    const currentEvents = (state.activeEvents ?? []).filter(e => e.day === state.day)
 
     // --- 1. Active location modifiers ---
+    if (location.id === "wildrift") {
+        for (const e of currentEvents) {
+            if (e.type === "BOSS_APPEAR" || e.type === "BOSS_DEFEATED" || e.type === "BOSS_FAILED") {
+                events.push({
+                    type: e.type,
+                    data: {
+                        bossName: e.data?.bossName ?? "Boss",
+                        message: e.data?.message ?? ""
+                    }
+                })
+            }
+        }
+    }
+
     const activeModifiers =
         (state.activeModifiers ?? []).filter(
             m => m.locationId === location.id

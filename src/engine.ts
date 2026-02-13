@@ -351,8 +351,8 @@ export async function processTick(initialState: GameState, actions: Action[], ro
     // 2. Process Actions
     const gatheringActions: Action[] = uniqueActions.filter(action => action.type === 'GATHER');
     const explorationActions: Action[] = uniqueActions.filter(action => action.type === 'EXPLORE');
-    const attackClanActions: Action[] = uniqueActions.filter(action => action.type === 'ATTACK' && action.target !== 'monsters_base');
-    const attackMonstersActions: Action[] = uniqueActions.filter(action => action.type === 'ATTACK' && action.target === 'monsters_base');
+    const attackClanActions: Action[] = uniqueActions.filter(action => action.type === 'ATTACK' && action.target !== 'wildrift');
+    const attackMonstersActions: Action[] = uniqueActions.filter(action => action.type === 'ATTACK' && action.target === 'wildrift');
     const waitActions: Action[] = uniqueActions.filter(action => action.type === 'WAIT');
 
     console.log("Process gathering actions")
@@ -588,7 +588,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
             continue
         }
 
-        const location = Object.values(nextState.locations).find(l => l.id === "monsters_base");
+        const location = Object.values(nextState.locations).find(l => l.id === "wildrift");
         const locationModifier = getActiveLocationModifier(nextState, location);
         const monsterFortunePenalty = locationModifier?.effects.fortune ?? 0;
 
