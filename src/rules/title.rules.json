@@ -1,7 +1,7 @@
 [
     {
         "id": "forager",
-        "title": "The Forager",
+        "title": "🧺 The Forager",
         "requirement": {
             "field": "meta.gatherFoodCount",
             "operator": ">=",
@@ -19,7 +19,7 @@
     },
     {
         "id": "harvester",
-        "title": "The Harvester",
+        "title": "🧺 The Harvester",
         "requirement": {
             "field": "meta.gatherFoodCount",
             "operator": ">=",
@@ -37,7 +37,7 @@
     },
     {
         "id": "hoarder",
-        "title": "The Hoarder",
+        "title": "🧺 The Hoarder",
         "requirement": {
             "field": "meta.food",
             "operator": ">=",
@@ -55,7 +55,7 @@
     },
     {
         "id": "timberhand",
-        "title": "Timberhand",
+        "title": "🪓 Timberhand",
         "requirement": {
             "field": "meta.gatherWoodCount",
             "operator": ">=",
@@ -73,7 +73,7 @@
     },
     {
         "id": "lumberjack",
-        "title": "Lumberjack",
+        "title": "🪓 Lumberjack",
         "requirement": {
             "field": "meta.gatherWoodCount",
             "operator": ">=",
@@ -91,7 +91,7 @@
     },
     {
         "id": "collector",
-        "title": "The Woodpecker",
+        "title": "🪓 The Woodpecker",
         "requirement": {
             "field": "meta.wood",
             "operator": ">=",
@@ -109,7 +109,7 @@
     },
     {
         "id": "prospector",
-        "title": "Prospector",
+        "title": "⛏ Prospector",
         "requirement": {
             "field": "meta.gatherGoldCount",
             "operator": ">=",
@@ -127,7 +127,7 @@
     },
     {
         "id": "gold_seeker",
-        "title": "Gold Seeker",
+        "title": "⛏ Gold Seeker",
         "requirement": {
             "field": "meta.gatherGoldCount",
             "operator": ">=",
@@ -145,7 +145,7 @@
     },
     {
         "id": "gold_digger",
-        "title": "The Digger",
+        "title": "⛏ Gold Digger",
         "requirement": {
             "field": "meta.gold",
             "operator": ">=",
@@ -163,7 +163,7 @@
     },
     {
         "id": "wanderer",
-        "title": "The Wanderer",
+        "title": "👣 The Wanderer",
         "requirement": {
             "field": "meta.exploreCount",
             "operator": ">=",
@@ -181,7 +181,7 @@
     },
     {
         "id": "pathfinder",
-        "title": "Pathfinder",
+        "title": "👣 Pathfinder",
         "requirement": {
             "field": "meta.exploreCount",
             "operator": ">=",
@@ -199,7 +199,7 @@
     },
     {
         "id": "bloodhound",
-        "title": "Bloodhound",
+        "title": "🗡️ Bloodhound",
         "requirement": {
             "field": "meta.playerWins",
             "operator": ">=",
@@ -217,7 +217,7 @@
     },
     {
         "id": "battle_hardened",
-        "title": "The Hardened",
+        "title": "🗡️ The Hardened",
         "requirement": {
             "field": "meta.playerWins",
             "operator": ">=",
@@ -235,7 +235,7 @@
     },
     {
         "id": "veteran",
-        "title": "Veteran",
+        "title": "⚔️ Veteran",
         "requirement": {
             "field": "meta.attackCount",
             "operator": ">=",
@@ -253,7 +253,7 @@
     },
     {
         "id": "unlucky",
-        "title": "The Bad Luck",
+        "title": "🛡 The Bad Luck",
         "requirement": {
             "field": "meta.attackedCount",
             "operator": ">=",
@@ -271,7 +271,7 @@
     },
     {
         "id": "very_unlucky",
-        "title": "The Cursed",
+        "title": "🛡 The Cursed",
         "requirement": {
             "field": "meta.attackedCount",
             "operator": ">=",
@@ -289,7 +289,7 @@
     },
     {
         "id": "scarred",
-        "title": "The Scarred",
+        "title": "🩸 The Scarred",
         "requirement": {
             "field": "meta.playerLosses",
             "operator": ">=",
@@ -307,7 +307,7 @@
     },
     {
         "id": "omen",
-        "title": "The Omen",
+        "title": "🩸 The Omen",
         "requirement": {
             "field": "meta.playerLosses",
             "operator": ">=",
@@ -325,7 +325,7 @@
     },
     {
         "id": "hunter",
-        "title": "The Hunter",
+        "title": "🐺 The Hunter",
         "requirement": {
             "field": "meta.monsterKilled",
             "operator": ">=",
@@ -343,7 +343,7 @@
     },
     {
         "id": "monster_slayer",
-        "title": "Beast Slayer",
+        "title": "🐺 Beast Slayer",
         "requirement": {
             "field": "meta.monsterKilled",
             "operator": ">=",
@@ -361,7 +361,7 @@
     },
     {
         "id": "survivor",
-        "title": "The Survivor",
+        "title": "🏳 The Survivor",
         "requirement": {
             "field": "meta.attackLoseStreak",
             "operator": ">=",
@@ -379,7 +379,7 @@
     },
     {
         "id": "champion",
-        "title": "The Champion",
+        "title": "👑 The Champion",
         "requirement": {
             "field": "meta.attackWinStreak",
             "operator": ">=",
@@ -397,7 +397,7 @@
     },
     {
         "id": "monster_master",
-        "title": "Beast Master",
+        "title": "🐺 Beast Master",
         "requirement": {
             "field": "meta.monsterEncountered",
             "operator": ">=",
@@ -415,7 +415,7 @@
     },
     {
         "id": "boss_slayer",
-        "title": "Boss Slayer",
+        "title": "🐉 Boss Slayer",
         "requirement": {
             "field": "meta.bossKilled",
             "operator": ">=",
@@ -433,7 +433,7 @@
     },
     {
         "id": "boss_ruler",
-        "title": "Boss Ruler",
+        "title": "🐉 Boss Ruler",
         "requirement": {
             "field": "meta.bossKilled",
             "operator": ">=",
