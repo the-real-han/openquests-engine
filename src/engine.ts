@@ -190,8 +190,8 @@ function maybeSpawnBoss(previousState: GameState, state: GameState, rollDice: Di
         }
 
         state.activeEvents.push({
-            id: `boss_appear_${boss.id}_${state.day}`,
-            type: "BOSS_APPEAR",
+            id: `boss_appeared_${boss.id}_${state.day}`,
+            type: "BOSS_APPEARED",
             day: state.day,
             location: monstersLocation?.name ?? '',
             data: { bossName: boss.name, message: boss.messages.appear[state.day % boss.messages.appear.length] }
@@ -263,7 +263,7 @@ function resolveBossIfNeeded(state: GameState) {
     if (state.day >= active.expiresOn) {
         state.activeEvents.push({
             id: `boss_failed_${bossRule.id}_${state.day}`,
-            type: "BOSS_FAILED",
+            type: "BOSS_DISAPPEARED",
             day: state.day,
             location: state.locations[active.locationId].name,
             data: { bossName: bossRule.name, message: msg }
@@ -703,7 +703,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
             } : undefined,
             summary: player.message
         })
-        if (player.history.length > 10) {
+        if (player.history.length > 5) {
             player.history.shift();
         }
     }

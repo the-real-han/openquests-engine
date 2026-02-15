@@ -1,5 +1,6 @@
 import { GameState, LocationHistoryEntry, LocationState, WorldHistoryEntry } from '@openquests/schema';
 import { GoogleGenAI } from '@google/genai';
+import BOSS_RULES from "./rules/boss.rules.json";
 
 const apiKey = process.env.GEMINI_API_KEY;
 
@@ -121,8 +122,7 @@ export function buildWorldNarrationInput(state: GameState): WorldHistoryEntry {
 
     for (const e of currentEvents) {
         if (e.id.startsWith("boss_")) {
-            let status = e.type.replace("BOSS_", "") as "APPEARED" | "DEFEATED" | "FAILED";
-            if (status === "APPEAR" as any) status = "APPEARED";
+            let status = e.type.replace("BOSS_", "") as "APPEARED" | "DEFEATED" | "DISAPPEARED";
 
             bossEvents.push({
                 name: e.data?.bossName ?? "Boss",
@@ -161,12 +161,14 @@ export function buildLocationNarrationInput(
     const currClan = clanId ? state.clans[clanId] : null
 
     const events: LocationHistoryEntry["events"] = []
+    const activeBoss = state.activeBoss
     const currentEvents = (state.activeEvents ?? []).filter(e => e.day === state.day)
 
     // --- 1. Active location modifiers ---
     if (location.id === "wildrift") {
+        let bossLog = false;
         for (const e of currentEvents) {
-            if (e.type === "BOSS_APPEAR" || e.type === "BOSS_DEFEATED" || e.type === "BOSS_FAILED") {
+            if (e.type === "BOSS_APPEARED" || e.type === "BOSS_DEFEATED" || e.type === "BOSS_DISAPPEARED") {
                 events.push({
                     type: e.type,
                     data: {
@@ -174,7 +176,19 @@ export function buildLocationNarrationInput(
                         message: e.data?.message ?? ""
                     }
                 })
+                bossLog = true;
             }
+        }
+
+        if (!bossLog && activeBoss) {
+            const boss = BOSS_RULES.find(b => b.id === activeBoss.bossId)
+            events.push({
+                type: "BOSS_APPEARED",
+                data: {
+                    bossName: boss?.name ?? "Boss",
+                    message: boss?.messages.appear[0] ?? ""
+                },
+            })
         }
     }
 
