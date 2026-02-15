@@ -175,8 +175,8 @@ function getTitleBonus(player: Player, bonusType: 'food' | 'wood' | 'gold' | 'xp
 function maybeSpawnBoss(previousState: GameState, state: GameState, rollDice: DiceFn) {
     if (previousState.activeBoss || state.activeBoss) return
 
-    // 15% chance of spawning boss
-    if (rollDice() > 17) {
+    // 20% chance of spawning boss
+    if (rollDice() > 16) {
         const boss = BOSS_RULES[rollDice() % BOSS_RULES.length] // or weighted pick later
 
         const monstersLocation = Object.values(state.locations).find(l => l.clanId === 'monsters')
@@ -274,15 +274,15 @@ function resolveBossIfNeeded(state: GameState) {
 
 function maybeSpawnLocationModifiers(
     state: GameState,
+    locationId: string,
     rollDice: DiceFn
 ) {
     const modifiers: LocationModifier[] = []
 
-    // Example: 20% chance per day
-    if (rollDice() < 4) {
+    // 30% chance per day
+    if (rollDice() < 6) {
 
-        const locations = Object.values(state.locations)
-        const location = locations[Math.abs(rollDice()) % locations.length]
+        const location = state.locations[locationId]
         const locationEvent = LOCATION_EVENTS[Math.abs(rollDice()) % LOCATION_EVENTS.length] as LocationEvent
         if (!(location.clanId === "monsters" && locationEvent.type !== "WEATHER")) {
             modifiers.push({
@@ -654,12 +654,26 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         checkAndGrantTitles(player, TITLES as Title[]);
     }
 
-    console.log("looking for new BOSS")
-    //BOSS appears 
-    maybeSpawnBoss(initialState, nextState, rollDice);
-    console.log("looking for new world events")
-    // world events
-    maybeSpawnLocationModifiers(nextState, rollDice);
+    const counts = {} as Record<string, number>;
+    let maxCount = 0;
+    let mostFrequentExploration = "";
+
+    explorationActions.forEach(action => {
+        if (!action.target) return;
+        counts[action.target] = (counts[action.target] || 0) + 1;
+        if (counts[action.target] > maxCount) {
+            maxCount = counts[action.target];
+            mostFrequentExploration = action.target;
+        }
+    });
+
+    if (mostFrequentExploration === "wildrift") {
+        console.log("looking for new BOSS")
+        maybeSpawnBoss(initialState, nextState, rollDice);
+    } else {
+        console.log("looking for new world events")
+        maybeSpawnLocationModifiers(nextState, mostFrequentExploration, rollDice);
+    }
 
     // process clan daily bonus
     console.log("Give clan daily bonus")
