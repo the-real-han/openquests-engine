@@ -69,7 +69,6 @@ function makeGameState(): GameState {
         locations: {
             'locA': { id: 'locA', description: 'Desc A', clanId: 'clanA', name: 'Location A', history: [] },
             'locB': { id: 'locB', description: 'Desc B', clanId: 'clanB', name: 'Location B', history: [] },
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base', history: [] },
             'wildrift': { id: 'wildrift', description: 'The Wildrift', clanId: 'monsters', name: 'The Wildrift', history: [] }
         },
         players: { [player1.github.username]: player1 },
@@ -100,12 +99,14 @@ describe('Boss Mechanics', () => {
         test('Spawns boss when day > 1 and roll > 17', async () => {
             const state = makeGameState();
             // Dice:
-            // 1. Boss Spawn Check: 19 (> 17)
-            // 2. Boss Selection: 0 (index 0 -> Iron Behemoth)
-            // 3. Location Mod Check: 4 (Fail, so no mod)
-            const dice = createDeterministicDice([19, 0, 4]);
+            // 0, 1, 2: Explore logic (Rule, Outcome, Msg)
+            // 3: Boss Spawn Check: 19 (> 17)
+            // 4: Boss Selection: 0 (index 0 -> Iron Behemoth)
+            // 5: Location Mod Check: 4 (Fail, so no mod)
+            const dice = createDeterministicDice([10, 0, 0, 19, 0, 4]);
 
-            const { newState } = await processTick(state, [], dice);
+            const actions: Action[] = [{ playerId: '1', type: 'EXPLORE', target: 'wildrift' }];
+            const { newState } = await processTick(state, actions, dice);
 
             // Should spawn Iron Behemoth
             expect(newState.activeBoss).toBeDefined();
@@ -113,12 +114,13 @@ describe('Boss Mechanics', () => {
             expect(newState.activeBoss?.appearedOn).toBe(1); // Day 1, appeared during tick before increment
         });
 
-        test('Emits BOSS_APPEAR event', async () => {
+        test('Emits BOSS_APPEARED event', async () => {
             const state = makeGameState();
-            const dice = createDeterministicDice([20, 0]);
+            const dice = createDeterministicDice([10, 0, 0, 20, 0]);
 
-            const { newState } = await processTick(state, [], dice);
-            const event = newState.activeEvents.find(e => e.type === 'BOSS_APPEAR');
+            const actions: Action[] = [{ playerId: '1', type: 'EXPLORE', target: 'wildrift' }];
+            const { newState } = await processTick(state, actions, dice);
+            const event = newState.activeEvents.find(e => e.type === 'BOSS_APPEARED');
 
             expect(event).toBeDefined();
             expect(event?.data?.bossName).toBe(BOSS_RULES[0].name);
@@ -128,7 +130,7 @@ describe('Boss Mechanics', () => {
             const state = makeGameState();
             state.activeBoss = {
                 bossId: BOSS_RULES[0].id, // Use valid ID
-                locationId: 'monsters_base',
+                locationId: 'wildrift',
                 appearedOn: 1,
                 expiresOn: 999,
                 participants: []
@@ -140,8 +142,8 @@ describe('Boss Mechanics', () => {
 
             // Should still be the old boss
             expect(newState.activeBoss?.bossId).toBe(BOSS_RULES[0].id);
-            // Should not emit new BOSS_APPEAR
-            const validEvents = newState.activeEvents.filter(e => e.type === 'BOSS_APPEAR');
+            // Should not emit new BOSS_APPEARED
+            const validEvents = newState.activeEvents.filter(e => e.type === 'BOSS_APPEARED');
             expect(validEvents.length).toBe(0);
         });
 
@@ -155,17 +157,17 @@ describe('Boss Mechanics', () => {
     });
 
     describe('Boss Participation', () => {
-        test('Attacking monsters_base adds player to participants', async () => {
+        test('Attacking wildrift adds player to participants', async () => {
             const state = makeGameState();
             state.activeBoss = {
                 bossId: BOSS_RULES[0].id, // Iron Behemoth
-                locationId: 'monsters_base',
+                locationId: 'wildrift',
                 appearedOn: 1,
                 expiresOn: 10,
                 participants: []
             };
 
-            const actions: Action[] = [{ playerId: '1', type: 'ATTACK', target: 'monsters_base' }];
+            const actions: Action[] = [{ playerId: '1', type: 'ATTACK', target: 'wildrift' }];
 
             const { newState } = await processTick(state, actions);
 
@@ -178,13 +180,13 @@ describe('Boss Mechanics', () => {
             const state = makeGameState();
             state.activeBoss = {
                 bossId: BOSS_RULES[0].id,
-                locationId: 'monsters_base',
+                locationId: 'wildrift',
                 appearedOn: 1,
                 expiresOn: 10,
                 participants: [1] // Already joined
             };
 
-            const actions: Action[] = [{ playerId: '1', type: 'ATTACK', target: 'monsters_base' }];
+            const actions: Action[] = [{ playerId: '1', type: 'ATTACK', target: 'wildrift' }];
             const { newState } = await processTick(state, actions);
 
             // Participants should still only have one '1'
@@ -308,7 +310,7 @@ describe('Boss Mechanics', () => {
             const { newState } = await processTick(state, [], dice);
 
             expect(newState.activeBoss).toBeNull();
-            expect(newState.activeEvents.some(e => e.type === 'BOSS_FAILED')).toBe(true);
+            expect(newState.activeEvents.some(e => e.type === 'BOSS_DISAPPEARED')).toBe(true);
 
             // Player still gets failure XP for that day's attempt
             expect(newState.players['1'].character.xp).toBeGreaterThan(0);
@@ -332,7 +334,7 @@ describe('Boss Mechanics', () => {
             const { newState } = await processTick(state, [], dice);
 
             expect(newState.activeBoss).not.toBeNull();
-            expect(newState.activeEvents.some(e => e.type === 'BOSS_FAILED')).toBe(false);
+            expect(newState.activeEvents.some(e => e.type === 'BOSS_DISAPPEARED')).toBe(false);
         });
     });
 });

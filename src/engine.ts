@@ -14,9 +14,9 @@ function pushMessage(p: Player, msg: string) {
     p.message += (p.message ? "\n" : "") + msg;
 }
 
-function resolveAttackMonster(dice: number): AttackMonsterRule {
+function resolveAttackMonster(dice: number): AttackMonsterRule | undefined {
     const ruleset = ATTACK_MONSTER_RULES as AttackMonsterRuleSet;
-    return ruleset.rules.find(r => matchDice(dice, r.dice))!;
+    return ruleset.rules.find(r => matchDice(dice, r.dice));
 }
 
 function resolveGathering(dice: number) {
@@ -594,10 +594,13 @@ export async function processTick(initialState: GameState, actions: Action[], ro
 
         const dice = rollWithFortune(rollDice, player) - monsterFortunePenalty;
         const rule = resolveAttackMonster(dice);
+        if (!rule) {
+            console.warn(`No monster attack rule found for dice roll ${dice}`);
+            pushMessage(player, "The hunt was uneventful. The beasts of the wild remain elusive.");
+            continue;
+        }
 
         player.meta.monsterEncountered++;
-
-
 
         if (rule.kill) {
             player.meta.monsterKilled++;
@@ -667,12 +670,15 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         }
     });
 
-    if (mostFrequentExploration === "wildrift") {
-        console.log("looking for new BOSS")
-        maybeSpawnBoss(initialState, nextState, rollDice);
-    } else {
-        console.log("looking for new world events")
-        maybeSpawnLocationModifiers(nextState, mostFrequentExploration, rollDice);
+    nextState.activeModifiers = [];
+    if (mostFrequentExploration) {
+        if (mostFrequentExploration === "wildrift") {
+            console.log("looking for new BOSS")
+            maybeSpawnBoss(initialState, nextState, rollDice);
+        } else {
+            console.log("looking for new world events")
+            maybeSpawnLocationModifiers(nextState, mostFrequentExploration, rollDice);
+        }
     }
 
     // process clan daily bonus
@@ -717,7 +723,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
 
     console.log("Update location history")
     for (const location of Object.values(nextState.locations)) {
-        await sleep(20000);  // Commented out for tests - uncomment for production rate limiting
+        //await sleep(20000);  // Commented out for tests - uncomment for production rate limiting
         const locationHistoryEntry = buildLocationNarrationInput(initialState, nextState, location);
         const locationNarration = await generateLocationSummary(locationHistoryEntry);
         locationHistoryEntry.summary = locationNarration;

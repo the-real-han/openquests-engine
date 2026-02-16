@@ -64,7 +64,7 @@ function makeGameState(): GameState {
     return {
         day: 1,
         locations: {
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base', history: [] }
+            'wildrift': { id: 'wildrift', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base', history: [] }
         },
         players: { [player1.github.username]: player1 },
         clans: { [clanA.id]: clanA },
@@ -94,14 +94,14 @@ describe('Regressions', () => {
             const boss = BOSS_RULES.find(b => b.id === 'great_eagle')!;
 
             // Step 1: Spawn Boss
-            // Dice: Boss Check (20 roll -> >17), Boss Select (Great Eagle idx), LocMod(Fail 4)
-            // maybeSpawnBoss calls: rollDice() -> check > 17. If true: rollDice() -> pick boss.
-            // maybeSpawnLocationModifiers calls: rollDice() -> check < 4.
-            const spawnDice = createDeterministicDice([18, 7, 4]); // 18 (>17), 7 (eagle), 4 (no mod)
-            const { newState: s1 } = await processTick(state, [], spawnDice);
+            // Dice:
+            // 1. Explore logic (Rule, Outcome, Msg)
+            // 2. Boss Check (18 roll -> >17), Boss Select (Great Eagle idx), LocMod(Fail 4)
+            const spawnDice = createDeterministicDice([10, 0, 0, 18, 7, 4]); // 10,0,0 (explore), 18 (>17), 7 (eagle), 4 (no mod)
+            const { newState: s1 } = await processTick(state, [{ playerId: '1', type: 'EXPLORE', target: 'wildrift' }], spawnDice);
 
             expect(s1.activeBoss?.bossId).toBe(boss.id);
-            expect(s1.activeEvents.some(e => e.type === 'BOSS_APPEAR')).toBe(true);
+            expect(s1.activeEvents.some(e => e.type === 'BOSS_APPEARED')).toBe(true);
 
             // Step 2: Participate and Defeat
             // Create 5 Archers (assuming Great Eagle requirements)
@@ -112,7 +112,7 @@ describe('Regressions', () => {
 
             // Actions: Attack 
             const actions: Action[] = Array.from({ length: 5 }, (_, i) => ({
-                playerId: `${i + 1}`, type: 'ATTACK', target: 'monsters_base'
+                playerId: `${i + 1}`, type: 'ATTACK', target: 'wildrift'
             }));
 
             // Dice:
@@ -135,7 +135,7 @@ describe('Regressions', () => {
             const state = makeGameState();
             state.activeBoss = {
                 bossId: 'iron_behemoth',
-                locationId: 'monsters_base',
+                locationId: 'wildrift',
                 appearedOn: 1,
                 expiresOn: 2, // Expires on Day 2
                 participants: []
@@ -148,7 +148,7 @@ describe('Regressions', () => {
             const { newState } = await processTick(state, [], dice);
 
             expect(newState.activeBoss).toBeNull();
-            expect(newState.activeEvents.some(e => e.type === 'BOSS_FAILED')).toBe(true);
+            expect(newState.activeEvents.some(e => e.type === 'BOSS_DISAPPEARED')).toBe(true);
         });
     });
 
@@ -167,13 +167,13 @@ describe('Regressions', () => {
             const dice = createDeterministicDice([1, 4]);
             const { newState: s1 } = await processTick(state, [], dice);
 
-            expect(s1.players['1'].character.titles).toContain(simpleTitle.id);
+            expect(s1.players['1'].character.titles.some(t => t.id === simpleTitle.id)).toBe(true);
 
             // Second tick - should not duplicate or error, log message should check uniqueness if we tracked logs cleanly.
             // But we can check list length if we assume it doesn't duplicate.
 
             const { newState: s2 } = await processTick(s1, [], dice);
-            expect(s2.players['1'].character.titles.filter(t => t === simpleTitle.id).length).toBe(1);
+            expect(s2.players['1'].character.titles.filter(t => t.id === simpleTitle.id).length).toBe(1);
         });
 
         test('Title bonuses applied', async () => {
@@ -182,7 +182,7 @@ describe('Regressions', () => {
             const titleXp = TITLES.find(t => t.bonus?.xp && t.bonus.xp > 0);
 
             if (titleXp) {
-                state.players['1'].character.titles.push(titleXp.id);
+                state.players['1'].character.titles.push(titleXp as any);
                 // Trigger XP gain (e.g. Gather Food)
                 // Need rule where gather gives XP? Or Explore?
                 // Gathering usually gives resource.

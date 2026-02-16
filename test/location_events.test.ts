@@ -65,7 +65,7 @@ function makeGameState(): GameState {
         locations: {
             'locA': { id: 'locA', description: 'Location A', clanId: 'clanA', name: 'Location A', history: [] },
             'locB': { id: 'locB', description: 'Location B', clanId: 'clanB', name: 'Location B', history: [] },
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base', history: [] }
+            'wildrift': { id: 'wildrift', description: 'Monster Base', clanId: 'monsters', name: 'Monster Base', history: [] }
         },
         players: { [player1.github.username]: player1 },
         clans: { [clanA.id]: clanA },
@@ -90,17 +90,19 @@ function createDeterministicDice(rolls: number[]) {
 describe('Location Events & Modifiers', () => {
 
     describe('Modifier Spawning', () => {
-        test('Spawns modifier when roll < 4', async () => {
+        test('Spawns modifier when roll < 6', async () => {
             const state = makeGameState();
+            const actions: Action[] = [{ playerId: '1', type: 'EXPLORE', target: 'locA' }];
             // Dice:
-            // 1. Boss Spawn: 1 (Fail)
-            // 2. Location Mod Spawn Check: 3 (< 4, Success)
-            // 3. Location Select: 0 (locA)
-            // 4. Event Select: 0 (weather_heavy_rain)
-            // 5. Message Roll: 0
-            const dice = createDeterministicDice([1, 3, 0, 0, 0]);
+            // 1. Explore Rule Roll: 10
+            // 2. Explore Outcome Roll: 2 (Outcome wood)
+            // 3. Explore Msg Roll: 0
+            // 4. Location Mod Spawn Check: 5 (< 6, Success)
+            // 5. Event Index Select: 0 (weather_heavy_rain)
+            // 6. Modifier Message Roll: 0
+            const dice = createDeterministicDice([10, 2, 0, 5, 0, 0]);
 
-            const { newState } = await processTick(state, [], dice);
+            const { newState } = await processTick(state, actions, dice);
 
             expect(newState.activeModifiers).toBeDefined();
             expect(newState.activeModifiers?.length).toBe(1);
@@ -109,12 +111,13 @@ describe('Location Events & Modifiers', () => {
             expect(newState.activeEvents.find(e => e.type === 'WEATHER')).toBeDefined();
         });
 
-        test('Does not spawn modifier when roll >= 4', async () => {
+        test('Does not spawn modifier when roll >= 6', async () => {
             const state = makeGameState();
-            // Dice: Boss(1), LocMod(4, Fail)
-            const dice = createDeterministicDice([1, 4]);
+            const actions: Action[] = [{ playerId: '1', type: 'EXPLORE', target: 'locA' }];
+            // Dice: Explore(10, 2, 0), LocMod(6, Fail)
+            const dice = createDeterministicDice([10, 2, 0, 6]);
 
-            const { newState } = await processTick(state, [], dice);
+            const { newState } = await processTick(state, actions, dice);
             expect(newState.activeModifiers?.length).toBe(0);
         });
 
@@ -222,13 +225,13 @@ describe('Location Events & Modifiers', () => {
             state.activeModifiers = [{
                 id: 'blessing_fortune',
                 type: 'BLESSING',
-                locationId: 'monsters_base',
+                locationId: 'wildrift',
                 startedOn: 1,
                 effects: { fortune: 2 }, // +2
                 messages: []
             }];
 
-            const actions: Action[] = [{ playerId: '1', type: 'ATTACK', target: 'monsters_base' }];
+            const actions: Action[] = [{ playerId: '1', type: 'ATTACK', target: 'wildrift' }];
 
             // Dice: 19.
             // Modifier: -2.

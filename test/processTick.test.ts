@@ -1,7 +1,8 @@
 
 import { describe, test, expect, vi } from 'vitest';
 import { processTick } from '../src/engine';
-import { GameState, Player, Clan, Action, PlayerClass } from '@openquests/schema';
+import { GameState, Player, Clan, Action, PlayerClass, Title } from '@openquests/schema';
+import TITLES from '../src/rules/title.rules.json';
 
 // Mock AI generation to avoid API calls
 vi.mock('../src/story', async (importOriginal) => {
@@ -69,7 +70,7 @@ function makeGameState(): GameState {
         locations: {
             'locA': { id: 'locA', description: 'Desc A', clanId: 'clanA', name: 'Loc A', history: [] },
             'locB': { id: 'locB', description: 'Desc B', clanId: 'clanB', name: 'Loc B', history: [] },
-            'monsters_base': { id: 'monsters_base', description: 'Monster Base', clanId: 'monsters', name: 'Monsters Base', history: [] }
+            'wildrift': { id: 'wildrift', description: 'Monster Base', clanId: 'monsters', name: 'Monsters Base', history: [] }
         },
         players: { [player1.github.username]: player1 },
         clans: {
@@ -482,7 +483,7 @@ describe('processTick', () => {
     describe('ATTACK_MONSTER', () => {
         test('Monster Kill and XP', async () => {
             const state = makeGameState();
-            const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'monsters_base' }];
+            const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'wildrift' }];
 
             // Rules:
             // > 18: XP 11, Kill
@@ -514,7 +515,7 @@ describe('processTick', () => {
             // Give player 0 XP initially.
             // Attack with roll 19 -> XP 11.
 
-            const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'monsters_base' }];
+            const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'wildrift' }];
             const dice = createDeterministicDice([19, 0]);
 
             const { newState } = await processTick(state, actions, dice);
@@ -721,7 +722,7 @@ describe('Attack Clan Edge Cases', () => {
 describe('Monster Attack Edge Cases', () => {
     test('No Kill Scenario', async () => {
         const state = makeGameState();
-        const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'monsters_base' }];
+        const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'wildrift' }];
 
         // Dice: 5 (max 5 -> xp 4, kill false)
         const dice = createDeterministicDice([5, 0]);
@@ -760,7 +761,7 @@ describe('Monster Attack Edge Cases', () => {
         // Use GATHER to trigger nothing? No... `lvUp` is called inside `resolveExploring` or `ATTACK_MONSTER`. 
         // Use ATTACK_MONSTER.
 
-        const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'monsters_base' }];
+        const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'wildrift' }];
         const dice = createDeterministicDice([17, 0]); // XP 9 (Min 16 rule). Match found.
 
         const { newState } = await processTick(state, actions, dice);
@@ -892,15 +893,16 @@ describe('Title System', () => {
 
             // 9 + 1 = 10. Threshold met.
 
-            expect(newP1.character.titles).toContain('forager');
-            expect(newP1.message).toContain("[TITLE UNLOCKED: The Forager]");
+            expect(newP1.character.titles.some(t => t.id === 'forager')).toBe(true);
+            expect(newP1.message).toContain("[TITLE UNLOCKED: 🧺 The Forager]");
         });
 
         test('Unlock only once', async () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             p1.meta.gatherFoodCount = 15;
-            p1.character.titles = ['forager']; // Already unlocked
+            const title = TITLES.find(t => t.id === 'forager')!;
+            p1.character.titles = [title as any]; // Already unlocked
 
             const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
             const dice = createDeterministicDice([10, 0]);
@@ -909,9 +911,9 @@ describe('Title System', () => {
             const newP1 = newState.players['p1'];
 
             // Should still be just one 'forager'
-            expect(newP1.character.titles.filter(t => t === 'forager').length).toBe(1);
+            expect(newP1.character.titles.filter(t => t.id === 'forager').length).toBe(1);
             // Message should NOT contain unlock text again
-            expect(newP1.message).not.toContain("[TITLE UNLOCKED: The Forager]");
+            expect(newP1.message).not.toContain("[TITLE UNLOCKED: 🧺 The Forager]");
         });
     });
 
@@ -920,21 +922,16 @@ describe('Title System', () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             // 'unlucky' title grants +1 Fortune.
-            p1.character.titles = ['unlucky'];
+            const title = TITLES.find(t => t.id === 'unlucky')!;
+            p1.character.titles = [title as any];
 
             const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
 
             // Dice: 18. +1 Fortune -> 19.
             // Rule for 19: Reward 12.
-            // Without fortune (18): Reward 11 (Min 16).
-
             const dice = createDeterministicDice([18, 0]);
 
             const { newState } = await processTick(state, actions, dice);
-
-            // Multiplier: 12 * 1.05 = 12.
-            // Title Bonus (food): 'unlucky' gives 0 food.
-            // Total: 12.
 
             expect(newState.players['p1'].message).toContain("[+12 food]");
         });
@@ -942,7 +939,8 @@ describe('Title System', () => {
         test('Fortune Clamping', async () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
-            p1.character.titles = ['unlucky']; // +1
+            const title = TITLES.find(t => t.id === 'unlucky')!;
+            p1.character.titles = [title as any]; // +1
 
             const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
 
@@ -960,7 +958,8 @@ describe('Title System', () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             // 'forager' -> +1 Food.
-            p1.character.titles = ['forager'];
+            const title = TITLES.find(t => t.id === 'forager')!;
+            p1.character.titles = [title as any];
 
             const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
 
@@ -978,7 +977,8 @@ describe('Title System', () => {
             const state = makeGameState();
             const p1 = state.players['p1'];
             // 'wanderer' -> +1 XP.
-            p1.character.titles = ['wanderer'];
+            const title = TITLES.find(t => t.id === 'wanderer')!;
+            p1.character.titles = [title as any];
 
             const actions: Action[] = [{ playerId: 'p1', type: 'EXPLORE', target: 'locA' }];
 
@@ -1009,7 +1009,12 @@ describe('Title System', () => {
             // 'forager' (+1), 'harvester' (+1), 'hoarder' (+1) -> Total 3.
             // Need 4th. 'monster_master' (+1 food).
 
-            p1.character.titles = ['forager', 'harvester', 'hoarder', 'monster_master'];
+            const t1 = TITLES.find(t => t.id === 'forager')!;
+            const t2 = TITLES.find(t => t.id === 'harvester')!;
+            const t3 = TITLES.find(t => t.id === 'hoarder')!;
+            const t4 = TITLES.find(t => t.id === 'monster_master')!;
+
+            p1.character.titles = [t1, t2, t3, t4] as any[];
 
             const actions: Action[] = [{ playerId: 'p1', type: 'GATHER', target: 'food' }];
 
@@ -1033,7 +1038,8 @@ describe('Title System', () => {
             state.locations['locB'].clanId = 'clanB';
 
             // P1 Unlucky (+1 Fortune). 
-            state.players['p1'].character.titles = ['unlucky'];
+            const title = TITLES.find(t => t.id === 'unlucky')!;
+            state.players['p1'].character.titles = [title as any];
             p2.character.titles = [];
 
             const actions: Action[] = [{ playerId: 'p1', type: 'ATTACK', target: 'locB' }];

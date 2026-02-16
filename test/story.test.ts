@@ -30,11 +30,11 @@ describe('Story Logic', () => {
             const state = makeState(5);
             state.activeEvents = [
                 {
-                    id: 'boss_appear_dragon_5', type: 'BOSS_APPEAR', day: 5, location: 'Mountain',
+                    id: 'boss_appear_dragon_5', type: 'BOSS_APPEARED', day: 5, location: 'Mountain',
                     data: { bossName: 'Dragon', message: 'Roar' }
                 } as any, // Cast to any to bypass strict type matching if needed for partial mocks
                 {
-                    id: 'old_event', type: 'BOSS_APPEAR', day: 4, location: 'Old', data: {}
+                    id: 'old_event', type: 'BOSS_APPEARED', day: 4, location: 'Old', data: {}
                 } as any
             ];
 

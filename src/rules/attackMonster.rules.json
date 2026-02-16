@@ -51,6 +51,19 @@
                 "The battle taught you humility — and survival.",
                 "You withdrew before things turned fatal."
             ]
+        },
+        {
+            "dice": {
+                "min": 6,
+                "max": 15
+            },
+            "xp": 7,
+            "messages": [
+                "You engaged the monster in a prolonged struggle. Neither side gained a clear advantage, but you learned much.",
+                "The creature was relentless, but you held your ground.",
+                "Safe but weary, you retreated after a fierce exchange of blows.",
+                "A stalemate in the wild. You survive to hunt another day."
+            ]
         }
     ]
 }
