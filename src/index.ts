@@ -171,6 +171,9 @@ export async function runTick() {
                     const action = parseAction(issue.number.toString(), lastComment.body);
                     actions.push(action);
                     console.log(`Action received from ${issue.user.login}: ${action.type}`);
+                } else {
+                    actions.push({ playerId, type: 'WAIT' });
+                    console.log(`No action found for issue #${issue.number}`);
                 }
             }
         }

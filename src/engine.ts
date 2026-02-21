@@ -340,6 +340,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
         const location = Object.values(nextState.locations).find(l => l.clanId === player.character.clanId);
         const locationModifier = getActiveLocationModifier(nextState, location);
         const fortuneMod = ignoreLocation ? 0 : (locationModifier?.effects.fortune ?? 0)
+        console.log(`Player ${player.character.name} rolling ${base} + fortune ${fortune} + location ${fortuneMod} = ${base + fortune + fortuneMod}`)
         return Math.max(min, Math.min(max, base + fortune + fortuneMod));
     }
 
@@ -420,7 +421,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
             } else {
                 const finalAmount = multiplyResources(rule.amount!, player);
                 clan[resource] = Math.max(0, clan[resource] - finalAmount);
-                pushMessage(player, `[-${finalAmount} ${resource}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", resource)}`);
+                pushMessage(player, `[-${finalAmount} ${resource}] ${rule.messages[rollDice() % rule.messages.length].replace("${resource}", resource)}`);
             }
         } else {
             const rule = resolveExploring(diceRolled, ruleset.rules);
@@ -435,7 +436,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
                 reward = multiplyResources(reward, player) + getTitleBonus(player, outcome as ClanResource);
                 player.meta[outcome as ClanResource] += reward;
                 clan[outcome as ClanResource] += reward;
-                pushMessage(player, `[+${reward} ${outcome}] ${rule.messages[rollDice() % rule.messages.length].replace("{resource}", outcome)}`);
+                pushMessage(player, `[+${reward} ${outcome}] ${rule.messages[rollDice() % rule.messages.length].replace("${resource}", outcome)}`);
             } else {
                 pushMessage(player, "Your clan has fallen. The spoils of exploration cannot be brought home.");
             }
@@ -723,7 +724,7 @@ export async function processTick(initialState: GameState, actions: Action[], ro
 
     console.log("Update location history")
     for (const location of Object.values(nextState.locations)) {
-        //await sleep(20000);  // Commented out for tests - uncomment for production rate limiting
+        await sleep(20000);  // Commented out for tests - uncomment for production rate limiting
         const locationHistoryEntry = buildLocationNarrationInput(initialState, nextState, location);
         const locationNarration = await generateLocationSummary(locationHistoryEntry);
         locationHistoryEntry.summary = locationNarration;
